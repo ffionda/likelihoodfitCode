@@ -522,9 +522,10 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
      if(ptMin > 1.0){
      // 
      psProperBkgFit->FixParameter(5,psProperBkgFit->GetParameter(5));
-     psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
+       if(!(resType.Contains("FS") && ptMin==3. && bandLow>3.)) psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
      psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
      if(resType.Contains("FF")) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7)); 
+     if(resType.Contains("FS") && ptMin==3. && bandLow>3.) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
      }
      
      }else{
