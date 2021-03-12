@@ -44,7 +44,7 @@ kWG1SS, kWG2SS, kMeanG1SS, kResG1SS, kMeanG2SS, kResG2SS, kAlphaResSS, kLambdaRe
 // additional parameters background 
 kLSym1, kWSym1L, 
 // additional parameters mass 
-kx3PolMass, kx4PolMass,
+kx4PolMass, kx5PolMass,
 // total number of parameters
 kNumPar
 };
@@ -54,6 +54,9 @@ const int numParam = kNumPar;
 
 Double_t paramInputValues[numParam];
 
+Bool_t useExpoBkgMass = kFALSE; // use exponential function for background (if false polynomial function is used)
+Int_t kPolynOrd = 3; // polyn. order for invariant mass bkg (3, 4, or 5)
+
 TString fitParameterNames[numParam]={
 // x background
 "WeightResolution", "WPosLm", "WNegLm", "WSymLm", "LPos", "LNeg", "LSym",
@@ -62,7 +65,7 @@ TString fitParameterNames[numParam]={
 // signal invariant mass 
 "Mean", "Nexp", "Sigma", "Alpha", "NormSig",
 // background invariant mass
-"NormBkg", "MeanBkg", "SlopeBkg", "ConstBkg",
+useExpoBkgMass ? "NormBkg" : "xPolynOrd0",useExpoBkgMass ? "MeanBkg" : "xPolynOrd1", useExpoBkgMass ? "SlopeBkg" : "xPolynOrd2", useExpoBkgMass ? "ConstBkg" : "xPolynOrd3",
 // resolution FF
 "WG1FF", "WG2FF", "MeanG1FF", "ResG1FF", "MeanG2FF", "ResG2FF", "AlphaResFF", "LambdaResFF", "NormPowerLawFF",
 // resolution FS
@@ -72,13 +75,12 @@ TString fitParameterNames[numParam]={
 // additional parameters background (extra symmetric part, if needed)
 "LSym1", "WSym1L",
 // additional parameters mass (polynomial bkg) 
-"x3PolMass", "x4PolMass",
+"xPolynOrd4", "xPolynOrd5",
 };
 
-Bool_t useExpoBkgMass = kFALSE; // use exponential function for background (if false polynomial function is used)
 
 Int_t invMassSignalParam[]={kMean, kNexp, kSigma, kAlpha, kNormSig}; // inv mass signal parameters
-Int_t invMassBkgExpoParam[]={kNormBkg, kMeanBkg, kSlopeBkg, kConstBkg}; // inv mass bkg parameters
+Int_t invMassBkgExpoParam[]={kNormBkg, kMeanBkg, kSlopeBkg, kConstBkg, kx4PolMass, kx5PolMass}; // inv mass bkg parameters
 
 //Int_t psProperBkgParam[]={kWPosL, kWNegL, kWSymL, kLPos, kLNeg, kLSym}; // x-background parameters to be fitted
 Int_t psProperBkgParam[]={kWPosL, kWNegL, kWSymL, kWSym1L, kLPos, kLNeg, kLSym, kLSym1}; // x-background parameters to be fitted [+additional symmetric part]
@@ -93,7 +95,7 @@ kFb, kFsig, kMean, kNexp, kSigma, kAlpha, kNormSig, kNormBkg, kMeanBkg, kSlopeBk
 kWG1FF, kWG2FF, kMeanG1FF, kResG1FF, kMeanG2FF, kResG2FF, kAlphaResFF, kLambdaResFF, kNormPowerLawFF,
 kWG1FS, kWG2FS, kMeanG1FS, kResG1FS, kMeanG2FS, kResG2FS, kAlphaResFS, kLambdaResFS, kNormPowerLawFS,
 kWG1SS, kWG2SS, kMeanG1SS, kResG1SS, kMeanG2SS, kResG2SS, kAlphaResSS, kLambdaResSS, kNormPowerLawSS,
-kWSym1L, kLSym1,kx3PolMass, kx4PolMass};
+kWSym1L, kLSym1,kx4PolMass, kx5PolMass};
 
 // all parameters (x-backgroud)
 Int_t psProperBkgParamAll[]={kWPosL, kWNegL, kWSymL, kWSym1L, kLPos, kLNeg, kLSym, kLSym1}; // x-background parameters (all)
@@ -188,7 +190,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   //if(fitmode == kFitChi2XResolFF || fitmode == kFitChi2XResolFS || fitmode==kFitChi2XResolSS || fitmode == kFitChi2SigMass) { inputFileName = inputDistrMC; centmin = -1; centmax = -1; }
   if(fitmode == kFitChi2XResolFF || fitmode == kFitChi2XResolFS || fitmode==kFitChi2XResolSS || fitmode == kFitChi2SigMass) {
       inputFileName = inputDistrMC;
-      if(fitmode == kFitChi2SigMass) {centmin = -1; centmax = -1;}
+      if(fitmode == kFitChi2SigMass) {centmin = -1; centmax = -1;} 
       
 }
   TFile f(inputFileName);
@@ -231,7 +233,6 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
       }
   }
 
- 
   TNtuple *ntOrig=0x0;
   ntOrig=(TNtuple*)f.Get("fNtupleJPSI");
   if(fitmode==kFitXBkg) {AddNtupla(nt,ntOrig,ptMin,ptMax,2.2,2.6,centmin,centmax);  AddNtupla(nt,ntOrig,ptMin,ptMax,3.2,4.0,centmin,centmax); } // add candidates within low+high mass sidebands (pp)
@@ -302,6 +303,14 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
         Int_t size = sizeof(invMassBkgExpoParam)/sizeof(Int_t);
         invMassBkgExpoParam[size] = kFsig;
         SetReleasedParameters(invMassBkgExpoParam,size+1);
+	if(kPolynOrd == 3){
+	/// fix higher polyn. x^4 and x^5 
+        fithandler->FixParam(kx4PolMass,kTRUE);
+        fithandler->FixParam(kx5PolMass,kTRUE);
+	printf("3th polyn. for bkg \n");
+	}else if(kPolynOrd == 4){
+        fithandler->FixParam(kx5PolMass,kTRUE); printf("4th polyn. for bkg \n");
+	}else {printf("5th polyn. for bkg \n");}
    break;
    }
 
@@ -442,17 +451,27 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   }
 
   if(fitmode==kFitChi2BkgMass){
+  Int_t sizeSig = sizeof(invMassSignalParam)/sizeof(Int_t);
+  Int_t sizeBkg = sizeof(invMassBkgExpoParam)/sizeof(Int_t); 
   // inv mass sig+bkg fit (signal fixed from MC)
   TF1 *invMassSigPlusBkg = SetupInvariantMassSignalPlusBkgFunction("SignalPlusBkg", bandLow, bandUp, useExpoBkgMass);
+  invMassSigPlusBkg->SetParameter(sizeSig+sizeBkg+1, histMass->GetEntries()*histMass->GetBinWidth(1));
+  if(kPolynOrd == 3){
+  invMassSigPlusBkg->FixParameter(sizeSig+sizeBkg, 0.); // fix x^5 term 
+  invMassSigPlusBkg->FixParameter(sizeSig+sizeBkg-1, 0.); // fix x^4 term 
+  printf("3th polyn. for bkg \n");
+  }else if(kPolynOrd == 4){
+  invMassSigPlusBkg->FixParameter(sizeSig+sizeBkg, 0.); // fix x^5 term 
+  printf("4th polyn. for bkg \n");
+  } else{
+  printf("5th polyn. for bkg \n");	 
+  }
   TCanvas *cMassSigPlusBkgFitChi2 = new TCanvas("invMassSigPlusBkgFit","invMassSigPlusBkgFit");
-  invMassSigPlusBkg->SetParameter(10, histMass->GetEntries()*histMass->GetBinWidth(1));
   TFitResultPtr rPsproperBackMass = histMass->Fit(invMassSigPlusBkg->GetName(),"S0","",bandLow,bandUp);
   histMass->DrawCopy("E");
   computeIntMass = kFALSE; // not needed for drawing 
   invMassSigPlusBkg->SetLineColor(1);
-  // drae signal part
-  Int_t sizeSig = sizeof(invMassSignalParam)/sizeof(Int_t);
-  Int_t sizeBkg = sizeof(invMassBkgExpoParam)/sizeof(Int_t); 
+  // draw signal part
   TF1 *invMassSigOnly = SetupInvariantMassSignalPlusBkgFunction("Signal", bandLow, bandUp, useExpoBkgMass);
   for(int ipar=0; ipar<sizeSig+sizeBkg+2;ipar++) { 
      if( (ipar < sizeSig+1) || (ipar == sizeSig+sizeBkg+1) ) invMassSigOnly->SetParameter(ipar, invMassSigPlusBkg->GetParameter(ipar));
@@ -1454,8 +1473,11 @@ Double_t InvariantMassSignalPlusBkgExpoFunction(Double_t *x, Double_t *par){
  likely_obj->SetBkgInvMassMean(par[7]);
  likely_obj->SetBkgInvMassSlope(par[8]);
  likely_obj->SetBkgInvMassConst(par[9]);
+ likely_obj->SetBkgInvMassPolyn4(par[10]);
+ likely_obj->SetBkgInvMassPolyn5(par[11]);
+
   
- Double_t kGlobNorm = par[10];
+ Double_t kGlobNorm = par[12];
  if(computeIntMass) likely_obj->ComputeMassIntegral(); // Sig(x) and Bkg(x) should be normalized to 1 in bandLow - bandUp
  // InvMass(x) = Fsig*Sig(x) + (1-Fsig)*Bkg(x)  -> normalized to 1 in bandLow - bandUp 
  return (FsigChi2*likely_obj->EvaluateCDFInvMassSigDistr(x[0])/likely_obj->GetIntegralMassSig() + (1-FsigChi2)*likely_obj->EvaluateCDFInvMassBkgDistr(x[0])/likely_obj->GetIntegralMassBkg())*kGlobNorm;
@@ -1466,7 +1488,6 @@ TF1 *SetupInvariantMassSignalPlusBkgFunction(TString name, Double_t lowEd, Doubl
  //  set up invariant mass signal+background function for chi2 fit 
  // this fit is used to determine inv mass bkg parameters
  // (signal fixed from MC)
-    isExpo = kFALSE;
  Int_t sizeSig = sizeof(invMassSignalParam)/sizeof(Int_t);
  Int_t sizeBkg = sizeof(invMassBkgExpoParam)/sizeof(Int_t);
  TF1 *invMassSignalPlusBkgFunc = new TF1(name,InvariantMassSignalPlusBkgExpoFunction,lowEd,upEd,sizeSig+sizeBkg+2);
@@ -1481,6 +1502,7 @@ TF1 *SetupInvariantMassSignalPlusBkgFunction(TString name, Double_t lowEd, Doubl
  for(int ipar=0; ipar<sizeBkg; ipar++){
  invMassSignalPlusBkgFunc->SetParameter(sizeSig+1+ipar,paramInputValues[invMassBkgExpoParam[ipar]]);
  invMassSignalPlusBkgFunc->SetParName(sizeSig+1+ipar, fitParameterNames[invMassBkgExpoParam[ipar]]);
+ if(!isExpo) invMassSignalPlusBkgFunc->SetParName(sizeSig+1+ipar, Form("xPolynOrd%d",ipar));
  }
  invMassSignalPlusBkgFunc->SetParName(sizeSig+sizeBkg+1,"Normalization");
  
