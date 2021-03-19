@@ -208,7 +208,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   // set inv mass signal parameters 
   if(fitmode != kFitChi2SigMass) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassSignalMC.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax));
   // set inv mass signal parameters
-  if(fitmode < kFitChi2SigMass) {
+  if(fitmode < kFitChi2SigMass || fitmode > kFitBkgMass) {
       TString resTypeSt = resType; 
     resTypeSt.ReplaceAll(";","_");
       if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
@@ -291,7 +291,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
 	if(ptMin > 3.){
 	fithandler->FixParam(kLPos,kTRUE);
 	fithandler->FixParam(kLNeg,kTRUE);
-	fithandler->FixParam(kLSym,kTRUE);
+	// fithandler->FixParam(kLSym,kTRUE);
 	fithandler->FixParam(kLSym1,kTRUE);
 	fithandler->FixParam(kWSym1L,kTRUE); 
 	}
