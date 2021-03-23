@@ -229,7 +229,16 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   if( !(ptMin==1.5 && ptMax==10.0) ){ 
       if(!resType.Contains(";")) SetStartingParameters(Form("inputFiles_1.5_10.0/bkgPtIntegrated/XBkgParameters_mass%1.1f_%1.1f_resType%s_pt1.5_10.0.root",bandLow,bandUp,resType.Data()));
       else SetStartingParameters(Form("inputFiles_1.5_10.0/bkgPtIntegrated/XBkgParameters_mass%1.1f_%1.1f_resTypeFF_pt1.5_10.0.root",bandLow,bandUp));
-      // if(resType.Contains("FS")) SetStartingParameters(Form("inputFiles_3.0_5.0/XBkgParameters_mass%1.1f_%1.1f_resTypeFF_pt3.0_5.0.root",bandLow,bandUp));
+      }else{
+        // starting parameters for centrality (10-30%)
+        if(centmin==10 && centmax==30){
+        TString massR;
+        if(bandLow < 3.0) { massR = "L";
+        if(bandLow == 2.6) massR.Append("1"); else massR.Append("2");  }
+        if(bandLow > 3.0) { massR = "H";
+        if(bandUp == 3.6) massR.Append("2"); else massR.Append("1");  }
+        SetStartingParameters(Form("startingParametersBkg/XBkgParameters_mass%s_%s_pt1.5_10.0.root",massR.Data(),resType.Data()));
+        }
       }
   }
 
