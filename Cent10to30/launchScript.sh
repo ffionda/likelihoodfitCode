@@ -1,0 +1,13 @@
+#./computeLikeFitMVA.sh 2.60 2.70 2.80 3.20 3.40 3.60
+#./computeLikeFitMVA.sh 2.60 2.72 2.80 3.20 3.38 3.60
+#./computeLikeFitMVA.sh 2.60 2.68 2.80 3.20 3.42 3.60
+./computeLikeFitMVA.sh 2.60 2.70 2.78 3.22 3.40 3.60
+#./computeLikeFitMVA.sh 2.60 2.70 2.82 3.18 3.40 3.60
+#./computeLikeFitMVA.sh 2.60 2.71 2.80 3.20 3.39 3.60
+#./computeLikeFitMVA.sh 2.60 2.69 2.80 3.20 3.41 3.60
+#./computeLikeFitMVA.sh 2.60 2.70 2.79 3.21 3.40 3.60
+#./computeLikeFitMVA.sh 2.60 2.70 2.81 3.19 3.40 3.60
+./computeLikeFitMVA.sh 2.60 2.72 2.82 3.22 3.42 3.60
+./computeLikeFitMVA.sh 2.60 2.68 2.78 3.18 3.38 3.60
+./computeLikeFitMVA.sh 2.60 2.72 2.82 3.18 3.38 3.60
+./computeLikeFitMVA.sh 2.60 2.68 2.78 3.22 3.42 3.60
