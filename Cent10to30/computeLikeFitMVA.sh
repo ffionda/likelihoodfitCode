@@ -16,9 +16,6 @@ CANDTYPE="FF;FS"
 cp -r emptyDir/inputFiles* .
 binptlimits="${PTEDGES[0]}_${PTEDGES[${#PTEDGES[@]}-1]}"
 echo  "$1 $2 $3 $4 $5 $6" >> inputFiles_$binptlimits/massEdges.txt
-
-
-:''
                        
 root -b -q LoadLib.C FitCDFLikelihoodPbPb.C++"("kFitChi2SigMass,${PTEDGES[0]},${PTEDGES[${#PTEDGES[@]}-1]},${MASSEDGES[0]},${MASSEDGES[${#MASSEDGES[@]}-1]},\"$CANDTYPE\",$CENTMIN,$CENTMAX")"
 root -b -q LoadLib.C FitCDFLikelihoodPbPb.C++"("kFitChi2BkgMass,${PTEDGES[0]},${PTEDGES[${#PTEDGES[@]}-1]},${MASSEDGES[0]},${MASSEDGES[${#MASSEDGES[@]}-1]},\"$CANDTYPE\",$CENTMIN,$CENTMAX")"
@@ -93,9 +90,9 @@ root -b -q ExtractJpsiSignal.C"("\"$ANHISTPATH\",${PTEDGES[$i]},${PTEDGES[$i+1]}
 root -b -q composeMEBackgroundforLikelihoodFit.C"("${PTEDGES[$i]},${PTEDGES[$i+1]},${MASSEDGES[0]},${MASSEDGES[${#MASSEDGES[@]}-1]},$CENTMIN,$CENTMAX,1,2")"
 root -b -q ExtractJpsiSignal.C"("\"$ANHISTPATH\",${PTEDGES[$i]},${PTEDGES[$i+1]},$CENTMIN,$CENTMAX,2,2")"
 root -b -q composeMEBackgroundforLikelihoodFit.C"("${PTEDGES[$i]},${PTEDGES[$i+1]},${MASSEDGES[0]},${MASSEDGES[${#MASSEDGES[@]}-1]},$CENTMIN,$CENTMAX,2,2")"
-
+#### cp resolutions for the pt integrated case study
+cp inputFiles_$binptlimits/XResol*root inputFiles_1.5_10.0/
 done
-
 
 #### fit x resolution and background (vs pt / mass)
 for ((i = 0; i < ${#PTEDGES[@]}-1; ++i)); do
@@ -111,7 +108,7 @@ for ((i = 0; i < ${#PTEDGES[@]}-1; ++i)); do
   else
   root -b -q LoadLib.C FitCDFLikelihoodPbPb.C++"("kFitXBkgMVAChi2,${PTEDGES[$i]},${PTEDGES[$i+1]},${MASSEDGES[$j]},${MASSEDGES[$j+1]},\"FF\",$CENTMIN,$CENTMAX")"
   root -b -q LoadLib.C FitCDFLikelihoodPbPb.C++"("kFitXBkgMVAChi2,${PTEDGES[$i]},${PTEDGES[$i+1]},${MASSEDGES[$j]},${MASSEDGES[$j+1]},\"FS\",$CENTMIN,$CENTMAX")"
-  #echo "do nothing"
+ #echo "do nothing"
   fi
   #### fit likelihood unbinned
   #root -b -q LoadLib.C FitCDFLikelihoodPbPb.C++"("kFitXBkgMVA,${PTEDGES[$i]},${PTEDGES[$i+1]},${MASSEDGES[$j]},${MASSEDGES[$j+1]},\"FF\"")"
@@ -153,6 +150,7 @@ done
 mkdir mass_${MASSEDGES[0]}_${MASSEDGES[1]}_${MASSEDGES[2]}_${MASSEDGES[3]}_${MASSEDGES[4]}_${MASSEDGES[5]}
 mv inputFiles* mass_${MASSEDGES[0]}_${MASSEDGES[1]}_${MASSEDGES[2]}_${MASSEDGES[3]}_${MASSEDGES[4]}_${MASSEDGES[5]}
 mv *txt mass_${MASSEDGES[0]}_${MASSEDGES[1]}_${MASSEDGES[2]}_${MASSEDGES[3]}_${MASSEDGES[4]}_${MASSEDGES[5]}
+mv MixedEventFiles mass_${MASSEDGES[0]}_${MASSEDGES[1]}_${MASSEDGES[2]}_${MASSEDGES[3]}_${MASSEDGES[4]}_${MASSEDGES[5]}
 ##### lkelihood fit to extract fb / fsig
 ### root LoadLib.C 
 ### root[1].L FitCDFLikelihoodPbPb.C++

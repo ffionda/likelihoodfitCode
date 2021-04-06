@@ -1,4 +1,4 @@
-void composeMEBackgroundforLikelihoodFit(Double_t ptmin = 1.5, Double_t ptmax = 10., Double_t mMin = 2.5, Double_t mMax = 3.6, Double_t centMin = 30., Double_t centMax = 50., Int_t pairTypeMin = 1 , Int_t pairTypeMax = 2 ){
+void composeMEBackgroundforLikelihoodFit(Double_t ptmin = 1.5, Double_t ptmax = 10., Double_t mMin = 2.5, Double_t mMax = 3.6, Double_t centMin = 30., Double_t centMax = 50., Int_t pairTypeMin = 1 , Int_t pairTypeMax = 2, Int_t polynOrd = 4){
 
 TFile *fmix = new TFile(Form("./MixedEventFiles/MixedEventResultsPt%.1f%.1fCent%.1f%.1fCand%.1d%.1d.root",ptmin, ptmax,centMin,centMax,pairTypeMin,pairTypeMax),"READ");
 
@@ -31,7 +31,7 @@ for(int icount=0; icount < (integral/(edg2-edg1)); icount++) resBkg->Fill((edg2+
 mixScaled->Add(resBkg);
 
 //// fit total distribution
-mixScaled->Fit("pol3","","",mMin,mMax);
+mixScaled->Fit(Form("pol%d",polynOrd),"","",mMin,mMax);
 TF1 *pol3total = (TF1*)(mixScaled->GetListOfFunctions()->At(0));
 mixScaled->GetXaxis()->SetRangeUser(mMin-0.1, mMax+0.1);
 mixScaled->DrawCopy();
@@ -52,20 +52,13 @@ TString arrTypes[]={"SS","FS","FF"};
 for(int i=pairTypeMin; i<=pairTypeMax; i++) pairString.Prepend(Form("%s_",arrTypes[i].Data())); 
 //printf("%s",pairString);
 
-/*if (pairTypeMin > 1.4 && pairTypeMax < 2.6) candString.Append("FF");
-else if (pairTypeMin > 0.4 && pairTypeMax < 2.6) candString.Append("FF_FS");
-else if (pairTypeMin > -0.6 && pairTypeMax < 2.6) candString.Append("FF_FS_SS");
-else if (pairTypeMin > 0.4 && pairTypeMax < 1.6) candString.Append("FS");
-else if (pairTypeMin > -0.6 && pairTypeMax < 1.6) candString.Append("FF_FS");
-else if (pairTypeMin > -0.6 && pairTypeMax < 1.6) candString.Append("SS");
-*/
-
 // create a new ntupla for storing ME parameters
 TFile *finvmassparamLikeME = new TFile(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s.root",ptmin,ptmax,pairString.Data()),"RECREATE");
 TNtuple *invMbkgME=new TNtuple("parameters","parameters",branches);
 
 // fill ntupla with parameters from ME + residual bkg fit
-Float_t val[4]; for(int ij=0; ij<4;ij++) {val[ij] = (Float_t)pol3total->GetParameter(ij); printf("param %f \n",val[ij]);}
+Float_t val[6]={0.,0.,0.,0.,0.,0.}; 
+for(int ij=0; ij<polynOrd+1;ij++) {val[ij] = (Float_t)(pol3total->GetParameter(ij)/pol3total->Integral(mMin,mMax)); printf("param %f \n",val[ij]);}
 invMbkgME->Fill(val);
 // save
 finvmassparamLikeME->cd();

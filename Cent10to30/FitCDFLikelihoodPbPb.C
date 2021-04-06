@@ -59,6 +59,8 @@ Double_t paramInputValues[numParam];
 Bool_t useExpoBkgMass = kFALSE; // use exponential function for background (if false polynomial function is used)
 Int_t kPolynOrd = 3; // polyn. order for invariant mass bkg (3, 4, or 5)
 
+Bool_t saveBkgParametersForPtIntegratedCase = kTRUE;
+
 TString fitParameterNames[numParam]={
 // x background
 "WeightResolution", "WPosLm", "WNegLm", "WSymLm", "LPos", "LNeg", "LSym",
@@ -210,9 +212,9 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   // set inv mass signal parameters 
   if(fitmode != kFitChi2SigMass) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassSignalMC.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax));
   // set inv mass signal parameters
-  if(fitmode < kFitChi2SigMass || fitmode > kFitBkgMass) {
+  if(fitmode < kFitChi2SigMass || fitmode > kFitBkgMass) { 
       TString resTypeSt = resType; 
-    resTypeSt.ReplaceAll(";","_");
+      resTypeSt.ReplaceAll(";","_");
       if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
       else SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax));
   } 
@@ -554,34 +556,26 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
      if(ptMin > 1.0){
      // 
      psProperBkgFit->FixParameter(5,psProperBkgFit->GetParameter(5));
-       if(!(resType.Contains("FS") && ptMin==3. && bandLow>3.)) psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
-     if(!(resType.Contains("FF") && bandLow==3.22 && ptMin==3.)) psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
-     if(resType.Contains("FF") && !(bandLow==3.22 && ptMin==3.)) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7)); 
-     if(resType.Contains("FS") && ptMin==3. && bandLow>3.) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
-     //if(resType.Contains("FF") && ptMin==3. && bandLow>3.21 && bandUp<3.41) {
-       //   psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
-     //}
+     psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
+     psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
+     if(resType.Contains("FF") && !(bandLow == 2.68 && bandUp == 2.78 && (ptMin == 1.5 || ptMin == 3.0)))  psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
+         if(ptMin == 3. && resType.Contains("FS") && !(bandLow == 3.20 && bandUp == 3.42) ){
+             psProperBkgFit->FixParameter(1,psProperBkgFit->GetParameter(1));
+	     psProperBkgFit->FixParameter(2,psProperBkgFit->GetParameter(2));
+	 } 
          
     }
      
      }else{
      psProperBkgFit->SetParameter(4,20.);
-     /*psProperBkgFit->SetParLimits(5, 0.0001,0.003);
-     psProperBkgFit->SetParLimits(6, 0.0001,0.003);
-     psProperBkgFit->SetParLimits(7, 0.001,0.1);
-     psProperBkgFit->SetParLimits(8, 0.00005,0.0003); */
      
      psProperBkgFit->SetParLimits(5, 0.0001,0.008);
      psProperBkgFit->SetParLimits(6, 0.0001,0.008);
      psProperBkgFit->SetParLimits(7, 0.0005,0.2);
      psProperBkgFit->SetParLimits(8, 0.00005,0.001);
-     if(bandLow == 3.2 || (bandLow == 2.6 && resType.Contains("FS")) || (bandLow == 3.4 && resType.Contains("FS"))) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
-     if(bandLow == 2.7 && resType.Contains("FF")) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
-     /*psProperBkgFit->SetParameter(4,20.);
-     psProperBkgFit->SetParLimits(5, 0.0001,0.005);
-     psProperBkgFit->SetParLimits(6, 0.0001,0.005);
-     psProperBkgFit->SetParLimits(7, 0.001,0.1);
-     psProperBkgFit->SetParLimits(8, 0.00005,0.0003);*/
+     if(( TMath::Abs(bandLow - 3.2)<0.03 && resType.Contains("FS")) || ( TMath::Abs(bandLow - 2.6)<0.03 && resType.Contains("FS")) || ( TMath::Abs(bandLow - 3.4)<0.03 && resType.Contains("FS"))) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
+     if( TMath::Abs(bandLow - 2.7)<0.03 && resType.Contains("FF") && !(bandLow==2.68 && bandUp==2.80) && !(bandLow==2.68 && bandUp==2.78)) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
+     if( bandLow == 2.72 && bandUp == 2.82 && resType.Contains("FS")) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
      }
    //
    if(resType.Contains("SS")) {
@@ -779,7 +773,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   Double_t FsigNew=0.; Double_t FsigNewErr=0.; 
   if(fitmode == kFitBkgMass || fitmode == kExtrFb){
   // draw invariant mass 
-  Double_t normMass =((Double_t)histMass->GetEntries())*histMass->GetBinWidth(1);
+  Double_t normMass =((Double_t)histMass->GetEntries())*histMass->GetBinWidth(1); 
   TF1 *invMassFunc = likely_obj->GetEvaluateCDFInvMassTotalDistr(bandLow,bandUp,normMass);
   invMassFunc->SetLineColor(kBlack);
   TCanvas *invMassCan = new TCanvas("invMassCanvas","invMassCanvas");
@@ -805,7 +799,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   invMassBkg->SetLineColor(3);
   invMassSig->Draw("same");
   legMass->AddEntry(invMassSig, "fit, signal","l");
-  if(fitmode == kFitBkgMass || fitmode == kExtrFb){
+  if(fitmode == kFitBkgMass || fitmode == kExtrFb ){
   invMassBkg->Draw("same");
   invMassFunc->Draw("same");
   legMass->AddEntry(invMassBkg, "fit, background","l");
@@ -939,7 +933,7 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
   SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassSignalMC.root",ptMin,ptMax));
   // set inv mass signal parameters
   //SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",ptMin,ptMax));
-if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",ptMin,ptMax,resTypeS.Data()));
+  if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",ptMin,ptMax,resTypeS.Data()));
    else SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",ptMin,ptMax));  
   
   
@@ -1075,7 +1069,6 @@ if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMa
 
   likely_obj->SetWeightType(weightType[2]/nCandSel,weightType[1]/nCandSel,weightType[0]/nCandSel);
   printf("FF %f - FS %f - SS %f ncand %f \n",weightType[2], weightType[1], weightType[0], nCandSel);
-
 /* 
   std::ofstream ofs;
   TString stringmass="";
@@ -1239,7 +1232,8 @@ if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMa
    psproperTot_sig->SetParameter(0,normPsSignal);
    psproperTot_sig->FixParameter(1,FsigNew);
    psproperTot_sig->FixParameter(2,FbFromFit);
-   psproperTot_sig->SetNpx(2500);
+   //psproperTot_sig->SetNpx(2500);
+   psproperTot_sig->SetNpx(1000);
    psproperTot_sig->SetLineColor(kBlack);
    psproperTot_sig->SetName("psProperTotal_sig");
    TFitResultPtr rPsproper_sig = histpsproperSignal->Fit(psproperTot_sig->GetName(),"S0Q");
@@ -1830,7 +1824,7 @@ void SaveFunctions(TString resType, Double_t ptMin, Double_t ptMax, Double_t ban
          }
         likely_obj_new->SetBkgParams(bkgParametersAll);
 
-        TFile fbkgOut(Form("inputFiles_%1.1f_%1.1f/XBkgFunctions.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax),"UPDATE");
+        TFile fbkgOut(Form("inputFiles_%1.1f_%1.1f/XBkgFunctions.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax),"UPDATE"); 
         for(int itype=0; itype<3;  itype++){
            if(resType.Contains(arrType[(Int_t)itype])) {
                 likely_obj_new->SetBackgroundSpecificParameters( 0, 0, itype);  
@@ -1843,10 +1837,17 @@ void SaveFunctions(TString resType, Double_t ptMin, Double_t ptMax, Double_t ban
                  if(fbkgOut.Get(Form("xbkgFunc%s_pt%1.1f_%1.1f_mass%1.2f_%1.2f;1",arrType[itype].Data(),ptMin,ptMax,bandLow,bandUp))) 
                  {
                      fbkgOut.Delete(Form("xbkgFunc%s_pt%1.1f_%1.1f_mass%1.2f_%1.2f;1",arrType[itype].Data(),ptMin,ptMax,bandLow,bandUp));
-                     
-                }
+                 }
                 
                 bkgFunc->Write();
+
+		if(saveBkgParametersForPtIntegratedCase){
+        	TFile fbkgOutPtIntegr(Form("inputFiles_1.5_10.0/XBkgFunctions.root"),"UPDATE"); 
+                bkgFunc->Write();
+	        fbkgOutPtIntegr.Close();	
+		
+		}
+
                 }
           }
 return;
