@@ -1,0 +1,134 @@
+\newcommand{\mLowSideOne}{\mLOne}
+\newcommand{\mLowSideTwo}{\mLTwo}
+\newcommand{\mHighSideOne}{\mHOne}
+\newcommand{\mHighSideTwo}{\mHTwo} 
+%%%
+
+
+\newenvironment{bkgSlide}[2]{
+        \begin{frame}
+        \frametitle{x-background fits low / high sidebands #1-#2 GeV/c}
+        \begin{figure}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/XBkgProjection_mass\mLowSideOne_\mLowSideTwo_typesFF_pt#1_#2.pdf}
+	\includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/XBkgProjection_mass\mLowSideOne_\mLowSideTwo_typesFS_pt#1_#2.pdf} \\
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/XBkgProjection_mass\mHighSideOne_\mHighSideTwo_typesFF_pt#1_#2.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/XBkgProjection_mass\mHighSideOne_\mHighSideTwo_typesFS_pt#1_#2.pdf} \\
+	\end{figure}
+        \end{frame}
+        }
+
+\newenvironment{bkgSlideHighPt}[2]{
+        \begin{frame}
+        \frametitle{x-background fits low / high sidebands #1-#2 GeV/c}
+        \begin{figure}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/XBkgProjection_mass\mLowSideOne_\mLowSideTwo_typesFF_FS_SS_pt#1_#2.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/XBkgProjection_mass\mHighSideOne_\mHighSideTwo_typesFF_FS_SS_pt#1_#2.pdf} \\
+        \end{figure}
+        \end{frame}
+        }
+
+
+\newenvironment{likeFitFFFS}[2]{
+        \begin{frame}
+        \frametitle{Likelihood fit FF+FS #1-#2 GeV/c}
+        \begin{figure}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF_FS.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF_FS_fSigFixed.pdf} \\
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF_FS.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF_FS_fSigFixed.pdf} \\
+        \end{figure}
+        \end{frame}
+        }
+
+\newenvironment{likeFitFFFSME}[2]{
+        \begin{frame}
+        \frametitle{Likelihood fit Mixed Events FF+FS #1-#2 GeV/c}
+        \begin{figure}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF_FS_ME.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF_FS_fSigFixed_ME.pdf} \\
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF_FS_ME.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF_FS_fSigFixed_ME.pdf} \\
+        \end{figure}
+        \end{frame}
+        }
+
+\newenvironment{likeFitFF}[2]{
+        \begin{frame}
+        \frametitle{Likelihood fit FF #1-#2 GeV/c}
+        \begin{figure}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF_fSigFixed.pdf} \\
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF_fSigFixed.pdf} \\
+        \end{figure}
+        \end{frame}
+        }
+        
+\newenvironment{likeFitFFME}[2]{
+        \begin{frame}
+        \frametitle{Likelihood fit Mixed Events FF #1-#2 GeV/c}
+        \begin{figure}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF_ME.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitProjSignalRegionMassFF_fSigFixed_ME.pdf} \\
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF_ME.pdf}
+        \includegraphics[width=0.49\textwidth]{inputFiles_#1_#2/LikelihoodFitInvariantMassFF_fSigFixed_ME.pdf} \\
+        \end{figure}
+        \end{frame}
+        }
+
+\newenvironment{summary}{
+	\begin{frame}
+        \frametitle{Likelihood fit results - summary Fb and Fsig}
+        \begin{figure}
+        \includegraphics[width=0.75\textwidth]{fbResults.png} \\
+        \includegraphics[width=0.75\textwidth]{FsigResults.png} 
+        \end{figure}
+        \end{frame}
+
+	\begin{frame}
+        \frametitle{Chi2 - projections}
+        \begin{figure}
+        \includegraphics[width=0.900\textwidth]{Chi2LikeFitResults.png} 
+        \end{figure}
+        \end{frame}
+
+
+}
+
+\documentclass{beamer}
+\usepackage{graphicx}
+\graphicspath{ {./} }
+
+
+
+\begin{document}
+
+
+	\begin{bkgSlide}{1.5}{10.0} \end{bkgSlide}
+	\begin{bkgSlide}{1.5}{3.0} \end{bkgSlide}
+	\begin{bkgSlide}{3.0}{5.0} \end{bkgSlide}
+	\begin{bkgSlideHighPt}{5.0}{10.0} \end{bkgSlideHighPt}
+%%%%%%%%%%%%%%%%%%%%% FF+FS
+	\begin{likeFitFFFS}{1.5}{10.0} \end{likeFitFFFS}
+	\begin{likeFitFFFS}{1.5}{3.0} \end{likeFitFFFS}
+	\begin{likeFitFFFS}{3.0}{5.0} \end{likeFitFFFS}
+	\begin{likeFitFFFS}{5.0}{10.0} \end{likeFitFFFS}
+ %%%%%%%%%%%%%%%%%%%%% FF+FS ME
+     \begin{likeFitFFFSME}{1.5}{10.0} \end{likeFitFFFSME}
+    \begin{likeFitFFFSME}{1.5}{3.0} \end{likeFitFFFSME}
+    \begin{likeFitFFFSME}{3.0}{5.0} \end{likeFitFFFSME}
+    \begin{likeFitFFFSME}{5.0}{10.0} \end{likeFitFFFSME}
+%%%%%%%%%%%%%%%%%%%%% FF
+	\begin{likeFitFF}{1.5}{10.0} \end{likeFitFF}
+	\begin{likeFitFF}{1.5}{3.0} \end{likeFitFF}
+	\begin{likeFitFF}{3.0}{5.0} \end{likeFitFF}
+	\begin{likeFitFF}{5.0}{10.0} \end{likeFitFF}
+ %%%%%%%%%%%%%%%%%%%%% FF ME
+     \begin{likeFitFFME}{1.5}{10.0} \end{likeFitFFME}
+    \begin{likeFitFFME}{1.5}{3.0} \end{likeFitFFME}
+    \begin{likeFitFFME}{3.0}{5.0} \end{likeFitFFME}
+    \begin{likeFitFFME}{5.0}{10.0} \end{likeFitFFME}
+%%%%%%%%%%%%%%%%%%%%
+	\begin{summary} \end{summary}
+
+\end{document}
