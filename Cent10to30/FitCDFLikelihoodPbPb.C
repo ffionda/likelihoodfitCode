@@ -23,10 +23,8 @@
 // MakeNtupleFromDstFilteredTree() and running on the 
 // standard output of the AliReducedAnalysisFilterTrees
 //
-
-//Use the tigther PID cuts
-TString inputDistr = "./InputRootFiles/NtuplePP5TeV_DATA_OS_tightPID.root"; //
-TString inputDistrMC = "./InputRootFiles/NtuplePP5TeV_MC_OS_tigthPID.root"; // only prompt J/psi
+TString inputDistr = "./NtuplePP5TeV_DATA_OS.root"; //
+TString inputDistrMC = "./NtuplePP5TeV_MC_all.root"; // only prompt J/psi
 
 enum fitParameters {
 // x background
@@ -58,8 +56,6 @@ Double_t paramInputValues[numParam];
 
 Bool_t useExpoBkgMass = kFALSE; // use exponential function for background (if false polynomial function is used)
 Int_t kPolynOrd = 3; // polyn. order for invariant mass bkg (3, 4, or 5)
-
-Bool_t saveBkgParametersForPtIntegratedCase = kTRUE;
 
 TString fitParameterNames[numParam]={
 // x background
@@ -149,26 +145,26 @@ Double_t*** ComputeWeightsForInterpolation(TNtuple *ntOrig, Bool_t kQuadratic, B
 Double_t ***LoadResolutionParameters(Double_t ptLimits[]);
 void LoadBackgroundFunctionsAndWeights(AliDielectronBtoJPSItoEleCDFfitFCN *likeObj,TString filename, TNtuple *ntCand, Bool_t Quadratic, Bool_t excludeExt);
 
-void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic, Double_t centmin=-1, Double_t centmax=-1, Bool_t fixFsig=kFALSE, Int_t mBkgOpt = 0 );
-void FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow=2.2, Double_t bandUp=4.0, TString resType="FF;FS",Double_t  centmin=-1, Double_t centmax = -1, Int_t mBkgOpt = 0);
+void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic, Double_t centmin=-1, Double_t centmax=-1, Bool_t fixFsig=kFALSE, Bool_t useMixedEvent=kFALSE);
+void FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow=2.2, Double_t bandUp=4.0, TString resType="FF;FS",Double_t  centmin=-1, Double_t centmax = -1, Bool_t useMixedEvent=kFALSE);
 // global var
 AliDielectronBtoJPSItoEleCDFfitFCN *likely_obj = 0x0;
 AliDielectronBtoJPSItoEleCDFfitFCN *likely_obj_proj = 0x0;
 Bool_t computeIntMass = kTRUE; 
 const Int_t kNbinsMax = 10;
 
-//Double_t ptEdges[]={1.5,3.0};  // pt range(s) //CHANGED, uncomment if pt-independent integrated
+//Double_t ptEdges[]={1.5,3.0};  // pt range(s)
 Double_t ptEdges[]={1.5,3.0,5.,10.};  // pt range(s)
-Double_t massBins[]={2.6,2.7,2.8, 3.2,3.4,3.6}; // low mass (0) - interp. region (1) - high mass (2)
+Double_t massBins[]={2.5, 2.8, 3.2, 3.6}; // low mass (0) - interp. region (1) - high mass (2)
 //Double_t massBins[]={2.70, 2.75, 2.82, 3.2, 3.26, 3.4}; // low mass (0) - interp. region (1) - high mass (2)
-Int_t extrRegion = 2;  // interp. region
+Int_t extrRegion = 1;  // interp. region
 Int_t kPtBins = sizeof(ptEdges)/sizeof(Double_t)-1;
 Int_t kMassBins = sizeof(massBins)/sizeof(Double_t)-1;
 Int_t kTypes = 3;
 Float_t nCandPtMassWnd[kNbinsMax][kNbinsMax][kNbinsMax];
 Float_t nCandPtMassWndSignal[kNbinsMax][kNbinsMax];
 
-void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, TString resType, Double_t  centmin, Double_t centmax, Int_t mBkgOpt){
+void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, TString resType, Double_t  centmin, Double_t centmax,Bool_t useMixedEvent){
 
   ///////////////////////////////////////////////////////////////////
   //
@@ -212,11 +208,10 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   // set inv mass signal parameters 
   if(fitmode != kFitChi2SigMass) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassSignalMC.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax));
   // set inv mass signal parameters
-  if(fitmode < kFitChi2SigMass || fitmode > kFitBkgMass) { 
+  if(fitmode < kFitChi2SigMass || fitmode > kFitBkgMass) {
       TString resTypeSt = resType; 
-      resTypeSt.ReplaceAll(";","_");
-      if(mBkgOpt == 1 ) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
-      else if(mBkgOpt == 2 ) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgLS%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
+    resTypeSt.ReplaceAll(";","_");
+      if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
       else SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax));
   } 
   
@@ -234,8 +229,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   if( !(ptMin==1.5 && ptMax==10.0) ){ 
       if(!resType.Contains(";")) SetStartingParameters(Form("inputFiles_1.5_10.0/bkgPtIntegrated/XBkgParameters_mass%1.1f_%1.1f_resType%s_pt1.5_10.0.root",bandLow,bandUp,resType.Data()));
       else SetStartingParameters(Form("inputFiles_1.5_10.0/bkgPtIntegrated/XBkgParameters_mass%1.1f_%1.1f_resTypeFF_pt1.5_10.0.root",bandLow,bandUp));
-      // if(resType.Contains("FS")) SetStartingParameters(Form("inputFiles_3.0_5.0/XBkgParameters_mass%1.1f_%1.1f_resTypeFF_pt3.0_5.0.root",bandLow,bandUp));
-            }else{
+      }else{
         // starting parameters for centrality (10-30%)
         if(centmin==10 && centmax==30){
         TString massR;
@@ -245,8 +239,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
         if(bandUp == 3.6) massR.Append("2"); else massR.Append("1");  }
         SetStartingParameters(Form("startingParametersBkg/XBkgParameters_mass%s_%s_pt1.5_10.0.root",massR.Data(),resType.Data()));
         }
-      
-}
+      }
   }
 
   TNtuple *ntOrig=0x0;
@@ -307,7 +300,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
 	if(ptMin > 3.){
 	fithandler->FixParam(kLPos,kTRUE);
 	fithandler->FixParam(kLNeg,kTRUE);
-	//fithandler->FixParam(kLSym,kTRUE);
+	// fithandler->FixParam(kLSym,kTRUE);
 	fithandler->FixParam(kLSym1,kTRUE);
 	fithandler->FixParam(kWSym1L,kTRUE); 
 	}
@@ -559,7 +552,8 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
      psProperBkgFit->FixParameter(5,psProperBkgFit->GetParameter(5));
      psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
      psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
-     if(resType.Contains("FF") && !(bandLow == 2.68 && bandUp == 2.78 && (ptMin == 1.5 || ptMin == 3.0)))  psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
+     if(resType.Contains("FF") && !(bandLow == 2.68 && bandUp == 2.78 && (ptMin == 1.5 || ptMin == 3.0)) && !(bandLow == 2.70 && bandUp == 2.78 && ( ptMin == 3.0)))  psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
+     //if(resType.Contains("FF") && !(bandLow == 2.70 && bandUp == 2.78 && ( ptMin == 3.0)))  psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
          if(ptMin == 3. && resType.Contains("FS") && !(bandLow == 3.20 && bandUp == 3.42) ){
              psProperBkgFit->FixParameter(1,psProperBkgFit->GetParameter(1));
 	     psProperBkgFit->FixParameter(2,psProperBkgFit->GetParameter(2));
@@ -568,7 +562,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
     }
      
      }else{
-     // psProperBkgFit->SetParameter(4,20.);
+     //psProperBkgFit->SetParameter(4,20.);
      
      psProperBkgFit->SetParLimits(5, 0.0001,0.008);
      psProperBkgFit->SetParLimits(6, 0.0001,0.008);
@@ -577,7 +571,9 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
      if(( TMath::Abs(bandLow - 3.2)<0.03 && resType.Contains("FS")) || ( TMath::Abs(bandLow - 2.6)<0.03 && resType.Contains("FS")) || ( TMath::Abs(bandLow - 3.4)<0.03 && resType.Contains("FS"))) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
      if( TMath::Abs(bandLow - 2.7)<0.03 && resType.Contains("FF") && !(bandLow==2.68 && bandUp==2.80) && !(bandLow==2.68 && bandUp==2.78)) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
      if( bandLow == 2.72 && bandUp == 2.82 && resType.Contains("FS")) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
-     }
+     if (bandLow == 2.60 && bandUp == 2.68 && resType.Contains("FF")) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
+       //  psProperBkgFit->SetParLimits(7, 0.0001,0.05);
+    }
    //
    if(resType.Contains("SS")) {
      psProperBkgFit->FixParameter(5,psProperBkgFit->GetParameter(5));
@@ -774,7 +770,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   Double_t FsigNew=0.; Double_t FsigNewErr=0.; 
   if(fitmode == kFitBkgMass || fitmode == kExtrFb){
   // draw invariant mass 
-  Double_t normMass =((Double_t)histMass->GetEntries())*histMass->GetBinWidth(1); 
+  Double_t normMass =((Double_t)histMass->GetEntries())*histMass->GetBinWidth(1);
   TF1 *invMassFunc = likely_obj->GetEvaluateCDFInvMassTotalDistr(bandLow,bandUp,normMass);
   invMassFunc->SetLineColor(kBlack);
   TCanvas *invMassCan = new TCanvas("invMassCanvas","invMassCanvas");
@@ -800,7 +796,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   invMassBkg->SetLineColor(3);
   invMassSig->Draw("same");
   legMass->AddEntry(invMassSig, "fit, signal","l");
-  if(fitmode == kFitBkgMass || fitmode == kExtrFb ){
+  if(fitmode == kFitBkgMass || fitmode == kExtrFb){
   invMassBkg->Draw("same");
   invMassFunc->Draw("same");
   legMass->AddEntry(invMassBkg, "fit, background","l");
@@ -892,7 +888,7 @@ return;
 }
 
 
-void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic,  Double_t centmin, Double_t centmax, Bool_t fixFsig, Int_t mBkgOpt){
+void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic,  Double_t centmin, Double_t centmax, Bool_t fixFsig, Bool_t useMixedEvent){
 ///////////////////////////////////////////////////////////////////
 // Set inv mass / pt limits
   //inv mass functions normalized to  1 between bandLow - bandUp 
@@ -907,9 +903,8 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
   if(filenameEdges) { for(int im=0; im<kMassBins+1; im++) { filenameEdges >> massBins[im]; /*printf("mass %f \n",massBins[im]);*/} }
   if(fixFsig){
       ifstream filenameFsig;
-      if(mBkgOpt == 1 ) filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/FractionOfSignalMassME%s_.txt",ptMin,ptMax,resTypeS.Data()));    
-      else if(mBkgOpt == 2 ) filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/FractionOfSignalMassLS%s_.txt",ptMin,ptMax,resTypeS.Data()));    
-      else filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/fSIGPt_%1.2f_%1.2f_type%s.txt",ptMin,ptMax,bandLow,bandUp,resTypeS.Data()));  
+      if(useMixedEvent) filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/FractionOfSignalMass%s_.txt",ptMin,ptMax,resTypeS.Data()));    
+    else filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/fSIGPt_%1.2f_%1.2f_type%s.txt",ptMin,ptMax,bandLow,bandUp,resTypeS.Data()));  
 
   if(filenameFsig) {filenameFsig >> fsigFrom1D; printf("Fsig from 1D in %1.2f-%1.2f GeV/c^{2} -> %1.2f",bandLow,bandUp,fsigFrom1D); }     
 }
@@ -935,8 +930,7 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
   SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassSignalMC.root",ptMin,ptMax));
   // set inv mass signal parameters
   //SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",ptMin,ptMax));
-  if(mBkgOpt == 1 ) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",ptMin,ptMax,resTypeS.Data()));
-  else if(mBkgOpt == 2 ) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgLS%s_.root",ptMin,ptMax,resTypeS.Data()));
+if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",ptMin,ptMax,resTypeS.Data()));
    else SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",ptMin,ptMax));  
   
   
@@ -1072,6 +1066,7 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
 
   likely_obj->SetWeightType(weightType[2]/nCandSel,weightType[1]/nCandSel,weightType[0]/nCandSel);
   printf("FF %f - FS %f - SS %f ncand %f \n",weightType[2], weightType[1], weightType[0], nCandSel);
+
 /* 
   std::ofstream ofs;
   TString stringmass="";
@@ -1206,8 +1201,7 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
   TString resTypeSlikeFit = resType; resTypeSlikeFit.ReplaceAll(";","_");
   if(kQuadratic) resTypeSlikeFit.Append("_quadraticWeights");
   if(fixFsig) resTypeSlikeFit.Append("_fSigFixed");
-  if(mBkgOpt == 1 ) resTypeSlikeFit.Append("_ME");
-  else if(mBkgOpt == 2 ) resTypeSlikeFit.Append("_LS");
+  if(useMixedEvent) resTypeSlikeFit.Append("_ME");
   invMassCan->SaveAs(Form("inputFiles_%1.1f_%1.1f/LikelihoodFitInvariantMass%s.root",ptMin,ptMax,resTypeSlikeFit.Data()));
   invMassCan->SaveAs(Form("inputFiles_%1.1f_%1.1f/LikelihoodFitInvariantMass%s.pdf",ptMin,ptMax,resTypeSlikeFit.Data()));
   Double_t integSig = invMassSig->Integral(bandLowSignal,bandUpSignal,1.e-06);
@@ -1236,8 +1230,7 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
    psproperTot_sig->SetParameter(0,normPsSignal);
    psproperTot_sig->FixParameter(1,FsigNew);
    psproperTot_sig->FixParameter(2,FbFromFit);
-   //psproperTot_sig->SetNpx(2500);
-   psproperTot_sig->SetNpx(1000);
+   psproperTot_sig->SetNpx(2500);
    psproperTot_sig->SetLineColor(kBlack);
    psproperTot_sig->SetName("psProperTotal_sig");
    TFitResultPtr rPsproper_sig = histpsproperSignal->Fit(psproperTot_sig->GetName(),"S0Q");
@@ -1255,8 +1248,7 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
    stringmass.Append(Form("_type%s",resTypeS.Data()));
    if(kQuadratic) stringmass.Append("_quadratic");
    if(fixFsig) stringmass.Append("_FsigFixed");
-   if(mBkgOpt == 1 ) stringmass.Append("_ME");
-   else if(mBkgOpt == 2 ) stringmass.Append("_LS");
+   if(useMixedEvent) stringmass.Append("_ME");
    ofs.open (Form("fbPt%1.2f_%1.2f%s.txt",ptMin,ptMax,stringmass.Data()), std::ofstream::out | std::ofstream::app);
    ofs << Form("%f %f %f %f %f %f \n",FbFromFit,FbErr,FsigFromFit,FsigErr,(rPsproper_sig->Chi2()/(Double_t)rPsproper_sig->Ndf()),(rMass->Chi2()/(Double_t)rMass->Ndf()));
    ofs.close();
@@ -1829,7 +1821,7 @@ void SaveFunctions(TString resType, Double_t ptMin, Double_t ptMax, Double_t ban
          }
         likely_obj_new->SetBkgParams(bkgParametersAll);
 
-        TFile fbkgOut(Form("inputFiles_%1.1f_%1.1f/XBkgFunctions.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax),"UPDATE"); 
+        TFile fbkgOut(Form("inputFiles_%1.1f_%1.1f/XBkgFunctions.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax),"UPDATE");
         for(int itype=0; itype<3;  itype++){
            if(resType.Contains(arrType[(Int_t)itype])) {
                 likely_obj_new->SetBackgroundSpecificParameters( 0, 0, itype);  
@@ -1842,17 +1834,10 @@ void SaveFunctions(TString resType, Double_t ptMin, Double_t ptMax, Double_t ban
                  if(fbkgOut.Get(Form("xbkgFunc%s_pt%1.1f_%1.1f_mass%1.2f_%1.2f;1",arrType[itype].Data(),ptMin,ptMax,bandLow,bandUp))) 
                  {
                      fbkgOut.Delete(Form("xbkgFunc%s_pt%1.1f_%1.1f_mass%1.2f_%1.2f;1",arrType[itype].Data(),ptMin,ptMax,bandLow,bandUp));
-                 }
+                     
+                }
                 
                 bkgFunc->Write();
-
-		if(saveBkgParametersForPtIntegratedCase){
-        	TFile fbkgOutPtIntegr(Form("inputFiles_1.5_10.0/XBkgFunctions.root"),"UPDATE"); 
-                bkgFunc->Write();
-	        fbkgOutPtIntegr.Close();	
-		
-		}
-
                 }
           }
 return;
