@@ -13,7 +13,7 @@ Double_t yield;
 
 void ExtractJpsiSignal(const Char_t* filename,
                        Double_t ptMin, Double_t ptMax,
-                       Double_t centMin, Double_t centMax, Int_t pairTypeMin, Int_t pairTypeMax);
+                       Double_t centMin, Double_t centMax, Int_t pairTypeMin, Int_t pairTypeMax, Bool_t useLS=kFALSE);
 void ConfigureSignalExtractionHybrid(Double_t ptMin, Double_t ptMax,
                                      Double_t centMin, Double_t centMax,
                                     Double_t minFit, Double_t maxFit, Int_t pairTypeMin, Int_t pairTypeMax);
@@ -39,7 +39,7 @@ void BeutifyTH1(TH1* h, const Char_t* title, Double_t lineWidth, Int_t lineColor
 void ConfigureSignalExtractionLS(Double_t ptMin, Double_t ptMax, 
                                  Double_t centMin, Double_t centMax,
                                  Double_t minFit, Double_t maxFit, 
-                                 Double_t minExcl, Double_t maxExcl);
+                                 Double_t minExcl, Double_t maxExcl,Int_t pairTypeMin, Int_t pairTypeMax);
 
 //void getSignals(const Char_t* filename, Double_t ptMin, Double_t ptMax, Double_t centMin, Double_t centMax);
 
@@ -190,7 +190,7 @@ void GetPtDependentYield(const Char_t* filename) {
 
 void ExtractJpsiSignal(const Char_t* filename, 
                        Double_t ptMin=-1.0, Double_t ptMax=-1,
-                       Double_t centMin=-1.0, Double_t centMax=-1.0, Int_t pairTypeMin = -1.0, Int_t pairTypeMax = -1.0) {
+                       Double_t centMin=-1.0, Double_t centMax=-1.0, Int_t pairTypeMin = -1.0, Int_t pairTypeMax = -1.0, Bool_t useLS = kFALSE) {
    
     //SET PAIRTYPE MIN AND PAIRTYPE MAX   
     //FF: 1.5 - 2.5
@@ -198,6 +198,7 @@ void ExtractJpsiSignal(const Char_t* filename,
     //SS -0.5-1.5
    // Double_t pairTypeMin = 0.51;
     //Double_t pairTypeMax = 2.49;
+    if(useLS) gSystem->Exec(Form("mkdir -p LSFiles"));
     gSystem->Exec(Form("mkdir -p MixedEventFiles"));
     const Char_t* setting="standard";
     
@@ -234,9 +235,9 @@ void ExtractJpsiSignal(const Char_t* filename,
       fitPtMin = 2.0; fitPtMax = 4.0;
    }
    //ConfigureSignalExtractionME(ptMin, ptMax, centMin, centMax, 1.5,4.5,2.5,3.2);
-   //ConfigureSignalExtractionLS(ptMin, ptMax, centMin, centMax, 1.5, 4.5, 2.5, 3.2);
+   if(useLS) ConfigureSignalExtractionLS(ptMin, ptMax, centMin, centMax, 1.5, 4.5, 2.5, 3.2, pairTypeMin, pairTypeMax);
    //ConfigureSignalExtractionFit(ptMin, ptMax, centMin, centMax, 1.8, 4.2);
-   ConfigureSignalExtractionHybrid(ptMin, ptMax, centMin, centMax, 2.0, 3.7, pairTypeMin, pairTypeMax);
+   else ConfigureSignalExtractionHybrid(ptMin, ptMax, centMin, centMax, 2.0, 3.7, pairTypeMin, pairTypeMax);
    //ConfigureSignalExtractionHybrid(ptMin, ptMax, centMin, centMax, 2.0, 4.0);
    
    gFits.Process();
@@ -245,10 +246,11 @@ void ExtractJpsiSignal(const Char_t* filename,
    //err = fitVals[AliResonanceFits::kSignifErr];
    
    
-   TFile foutput(Form("MixedEventFiles/MixedEventResultsPt%.1f%.1fCent%.1f%.1fCand%.1d%.1d.root",ptMin,ptMax,centMin,centMax,pairTypeMin,pairTypeMax),"RECREATE");
+   TString outputFileName = Form("MixedEventFiles/MixedEventResultsPt%.1f%.1fCent%.1f%.1fCand%.1d%.1d.root",ptMin,ptMax,centMin,centMax,pairTypeMin,pairTypeMax);
+   if(useLS) outputFileName = Form("LSFiles/LSResultsPt%.1f%.1fCent%.1f%.1fCand%.1d%.1d.root",ptMin,ptMax,centMin,centMax,pairTypeMin,pairTypeMax);
+   TFile foutput(outputFileName,"RECREATE"); 
    TH1 *mixEvHist = (TH1*)gFits.GetBkg();
    TH1 *hsignal = (TH1*)gFits.GetSignal();
-   TH1* SplusB = (TH1*)gFits.GetSplusB();
    //TH1 *mixEvHist = (TH1*)gFits.GetBkgCombinatorial();
    TF1 *resFit = (TF1*)gFits.GetBkgFitFunction();
    foutput.cd();
@@ -256,9 +258,12 @@ void ExtractJpsiSignal(const Char_t* filename,
    mixEvHist->SetName("fBkg");
    hsignal->Write();
    mixEvHist->Write();
+   if(!useLS){
+   TF1 *resFit = (TF1*)gFits.GetBkgFitFunction();
    resFit->Write();
+   TH1* SplusB = (TH1*)gFits.GetSplusB();
    SplusB->Write();
-   
+   }
     sig = fitVals[AliResonanceFits::kSig];
     sigErr = fitVals[AliResonanceFits::kSigErr];
     sigOvB = fitVals[AliResonanceFits::kSoverB];
@@ -274,7 +279,8 @@ void ExtractJpsiSignal(const Char_t* filename,
    TString centralityString = Form("Cent_%0.0f_%0.0f", centMin, centMax);
    TString ptString = Form("pt_%0.2f_%0.0f", ptMin, ptMax); 
     
-   Draw(&gFits, 2.92, 3.16, kTRUE, "./MixedEventFiles",s, ptString, centralityString);
+   if(useLS) Draw(&gFits, 2.92, 3.16, kTRUE, "./LSFiles",s, ptString, centralityString);
+   else Draw(&gFits, 2.92, 3.16, kTRUE, "./MixedEventFiles",s, ptString, centralityString);
 }
 
 
@@ -315,12 +321,14 @@ void ConfigureSignalExtractionME(Double_t ptMin = -1.0, Double_t ptMax = -1.0,
 void ConfigureSignalExtractionLS(Double_t ptMin = -1.0, Double_t ptMax = -1.0, 
                                  Double_t centMin = -1.0, Double_t centMax = -1.0,
                                  Double_t minFit = 1.5, Double_t maxFit = 4.72, 
-                                 Double_t minExcl = 2.5, Double_t maxExcl = 3.72) {
+                                 Double_t minExcl = 2.5, Double_t maxExcl = 3.72,Int_t pairTypeMin = -1, Int_t pairTypeMax = -1) {
       // 
       //  configure the AliResonanceFits object
       //
       gFits.AddVariable(AliReducedVarManager::kCentVZERO, 2);
       //gFits.AddVariable(AliReducedVarManager::kSPDntracklets, 3);
+      gFits.AddVariable(AliReducedVarManager::kPairTypeSPD, 3);
+      gFits.SetVarRange(AliReducedVarManager::kPairTypeSPD, pairTypeMin-0.3,pairTypeMax+0.3);
       gFits.AddVariable(AliReducedVarManager::kPt, 1);
       gFits.AddVariable(AliReducedVarManager::kMass, 0);
       gFits.SetVarRange(AliReducedVarManager::kMass, 1.0, 5.0);
