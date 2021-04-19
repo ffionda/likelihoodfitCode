@@ -3,6 +3,7 @@ Int_t nptbins = 3;
 Double_t ptbins[] = {1.5,3.0,5.0,10.0};
 TString types[] = {"FF","FF","FF_FS","FF_FS"};
 Int_t nmass = 4;
+Int_t nmassHyp = 5;
 Double_t mbins[9][4] = {
         {2.50, 2.80, 3.20, 3.60},
         {2.50, 2.75, 3.16, 3.60},
@@ -10,32 +11,100 @@ Double_t mbins[9][4] = {
         {2.50, 2.75, 3.25, 3.60},
         {2.50, 2.85, 3.16, 3.60}
         };
+Int_t mbinsSize =  nmassHyp;// sizeof(mbins)/sizeof(*mbins);
+//nmassHyp = mbinsSize;        
+
 TGraphErrors *BuildGraphFb(Double_t massBins[], TString type, Bool_t isQuadr, Bool_t fSigFixed, Bool_t mixedEvents, Int_t color, Int_t style);
-TGraphErrors *BuildGraphFbCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Bool_t mixedEvents,TString nameGraph, Int_t color, Int_t style);
+TGraphErrors *BuildGraphFbCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Int_t bkgType,TString nameGraph, Int_t color, Int_t style);
 TGraphErrors *BuildGraphFSig(Double_t massBins[], TString type, Bool_t isQuadr, Bool_t fSigFixed, Int_t color, Int_t style);
 TGraphErrors *BuildGraphChi2M(Double_t massBins[], TString type, Bool_t isQuadr, Bool_t fSigFixed, Int_t color, Int_t style); 
 TGraphErrors *BuildGraphChi2X(Double_t massBins[], TString type, Bool_t isQuadr, Bool_t fSigFixed, Int_t color, Int_t style); 
 TGraphErrors *BuildGraphFSig1D(Double_t massBins[], TString type, Int_t color, Int_t style);
+TGraphErrors *BuildGraphChi2XProjCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Bool_t mixedEvents,TString nameGraph, Int_t color, Int_t style);
+TGraphErrors *BuildGraphChi2MProjCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Bool_t mixedEvents,TString nameGraph, Int_t color, Int_t style);
 void readFbResults(Double_t massBins[], Bool_t pdf);
-void plotVsMassEdges(TString nameGraph,Bool_t isQuadr);
+void plotVsMassEdges(TString nameGraph="",Bool_t isQuadr=kFALSE,Double_t ymin=-1, Double_t ymax=-1);
 void plotResults(Int_t num, Bool_t createPdf);
 void plotVsAllMassEdges();
 void plotVsMassHypothesis(Int_t num);
 void plotVsAllMassHypothesis();
-void plotAllResults();
+void plotAllResults(Bool_t createPdf);
+TGraphErrors* computeRMSandAveragesForMassEdges(Int_t massHyp, Bool_t draw);
 void computeRMSandAverages();
+void computeSystInvMassBkg();
 
 
-void computeRMSandAveragesForMassEdges(){
-TString nameGraphs[] = {"fbVsPtComp","fbVsPtCompME"};
-TString nameGraphs2[] = {"fbVsPtCombinedQuadrWeights","fbVsPtCombinedQuadrWeightsME"};
+void computeSystInvMassBkg(){
+
+        Double_t averageUnc[nptbins+1]; for(int ipt=0; ipt<nptbins+1; ipt++) averageUnc[ipt] = 0.;
+        TGraphErrors *grSyst = new TGraphErrors(nptbins+1);
+        TCanvas *avgSystMass = new TCanvas("allM","allM");
+        Int_t colors[] = {1,2,4,6,7,8,9,3,15};
+        Int_t styles[] = {20,24,21,32,28,31,33,35,22};
+        Double_t xx, yy;
+        TLegend *legend=new TLegend(0.37,0.30,0.62,0.70);
+        legend->SetBorderSize(0); legend->SetFillColor(0); legend->SetTextFont(42);
+        legend->SetFillStyle(0); legend->SetMargin(0.25);
+        legend->SetEntrySeparation(0.15);
+        legend->SetTextSize(0.045);
+
+        for(int ij=0; ij<nmassHyp; ij++) {
+        TString path = "mass_";
+        for(int i=0; i<nmass-1; i++) path.Append(Form("%1.2f_",mbins[ij][i]));
+	TString pathLegend = path;
+        pathLegend.ReplaceAll("_"," ");
+                TGraphErrors *UncertPerMassEdge = computeRMSandAveragesForMassEdges(ij,kFALSE);
+
+                for(int ibin=0; ibin<nptbins+1; ibin++) {
+
+                        UncertPerMassEdge->GetPoint(ibin,xx,yy);
+                        UncertPerMassEdge->SetPoint(ibin,xx,UncertPerMassEdge->GetErrorY(ibin));
+                        averageUnc[ibin] += UncertPerMassEdge->GetErrorY(ibin)/nmassHyp;
+                        // printf("bin %d err %f \n",ibin, UncertPerMassEdge->GetErrorY(ibin));
+                        UncertPerMassEdge->SetPointError(ibin,UncertPerMassEdge->GetErrorX(ibin),0.);
+                	if(ij == nmassHyp-1) {
+                         grSyst->SetPoint(ibin, xx, 1.);
+                         grSyst->SetPointError(ibin, UncertPerMassEdge->GetErrorX(ibin), averageUnc[ibin]);
+                        }
+                }
+                UncertPerMassEdge->SetLineColor(colors[ij]);
+                UncertPerMassEdge->SetMarkerColor(colors[ij]);
+                UncertPerMassEdge->SetMarkerStyle(styles[ij]);
+                UncertPerMassEdge->GetXaxis()->SetTitle("p_{T}");
+                UncertPerMassEdge->GetYaxis()->SetTitle("rel. diff. inv. mass bkg");
+                UncertPerMassEdge->GetYaxis()->SetRangeUser(0.,1.);
+                if(ij == 0) UncertPerMassEdge->Draw("AP");
+                else UncertPerMassEdge->Draw("P same");
+
+               legend->AddEntry(UncertPerMassEdge,Form("%s GeV/c^{2}",path.Data()),"p");
+        }
+ legend->Draw();
+ TCanvas *cSystMass = new TCanvas();
+ grSyst->SetTitle(" ");
+ grSyst->GetXaxis()->SetTitle("p_{T}");
+ grSyst->GetYaxis()->SetTitle("average rel. diff. inv. mass bkg");
+ grSyst->SetLineColor(1);
+ grSyst->SetLineWidth(2);
+ grSyst->Draw("APL");
+
+ return;
+}
+
+
+TGraphErrors* computeRMSandAveragesForMassEdges(Int_t massHyp, Bool_t draw){
+TString nameGraphs[] = {"fbVsPtCompLS","fbVsPtCompME"};
+TString nameGraphs2[] = {"fbVsPtCombinedQuadrWeightsLS","fbVsPtCombinedQuadrWeightsME"};
 //TString nameGraphs[] = {"fbVsPtComp","fbVsPtCompME","fbVsPtCompFsigFixed","fbVsPtCompFsigFixedME"};
 //TString nameGraphs[] = {"fbVsPtComp","fbVsPtCompME","fbVsPtCombinedQuadrWeights","fbVsPtCombinedQuadrWeightsME"};
 TString titlePtString[] = {"1.5-10","1.5-3","3-5","5-10"};
 TH1F *fbVal[nptbins+1];
     TGraphErrors *grAverage = 0x0;
     TGraphErrors *gRelativeUncertainties = 0x0;
-        TString path = Form("mass_%1.2f_%1.2f_%1.2f_%1.2f",mbins[0][0],mbins[0][1],mbins[0][2],mbins[0][3]);
+        TString path = "mass_";
+        for(int i=0; i<nmass-1; i++) path.Append(Form("%1.2f_",mbins[massHyp][i]));
+        path.Append(Form("%1.2f",mbins[massHyp][nmass-1]));
+
+        //TString path = Form("mass_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f",mbins[0][0],mbins[0][1],mbins[0][2],mbins[0][3],mbins[0][4],mbins[0][5]);
         TFile *fin = new TFile(Form("%s/fbResultsComb.root",path.Data()),"READ");
         TFile *finquadratic = new TFile(Form("%s/fbResultsCombQuadrWeights.root",path.Data()),"READ");
         
@@ -57,25 +126,30 @@ for(int ipt=0; ipt<nptbins+1; ipt++) fbVal[ipt] = new TH1F(Form("Pt bin:%s",titl
              fbVal[ipt]->Fill(yy);
              grquadratic->GetPoint(ipt, xx, yy);
              fbVal[ipt]->Fill(yy);
-}
+	    }
          }
+
+	for(int ipt=0; ipt<nptbins+1; ipt++){
+		grAverage->GetPoint(ipt,xx,yy);
+		grAverage->SetPoint(ipt,xx, fbVal[ipt]->GetMean());
+		grAverage->SetPointError(ipt,grAverage->GetErrorX(ipt), maxValue[ipt]-minValue[ipt]);
+		gRelativeUncertainties->SetPoint(ipt,xx,1);
+		gRelativeUncertainties->SetPointError(ipt,grAverage->GetErrorX(ipt),(maxValue[ipt]-minValue[ipt])/fbVal[ipt]->GetMean());
+	}
+
+if(draw){
 TCanvas *cfbVal = new TCanvas();
 cfbVal->Divide(2,2);
 for(int ipt=0; ipt<nptbins+1; ipt++){
 cfbVal->cd(ipt+1);
 fbVal[ipt]->GetXaxis()->SetTitle("f_{B}");
-    fbVal[ipt]->GetYaxis()->SetTitle("Entries");
+fbVal[ipt]->GetYaxis()->SetTitle("Entries");
 fbVal[ipt]->DrawCopy();
-grAverage->GetPoint(ipt,xx,yy);
-grAverage->SetPoint(ipt,xx, fbVal[ipt]->GetMean());
-grAverage->SetPointError(ipt,grAverage->GetErrorX(ipt), maxValue[ipt]-minValue[ipt]);
-gRelativeUncertainties->SetPoint(ipt,xx,1);
-gRelativeUncertainties->SetPointError(ipt,grAverage->GetErrorX(ipt),(maxValue[ipt]-minValue[ipt])/fbVal[ipt]->GetMean());
 }
 cfbVal->Draw();
 TCanvas *cAvRMS = new TCanvas();
 cAvRMS->cd();
-gRelativeUncertainties->GetYaxis()->SetTitle("Rel. uncertainty (%)");
+gRelativeUncertainties->GetYaxis()->SetTitle("Rel. syst. uncertainty - inv. mass bkg (%)");
 gRelativeUncertainties->Draw();
 cAvRMS->Draw();
 
@@ -83,7 +157,9 @@ TCanvas *cfbVsPtUnc = new TCanvas();
 grAverage->GetYaxis()->SetTitle("Average +- RMS");
 grAverage->Draw();
 cAvRMS->SaveAs("ComparisonGraphs/RelativUncertaintiesOnInvMassBkg.pdf");
+}
 
+return gRelativeUncertainties;
 }
 
 void computeRMSandAverages(){
@@ -96,13 +172,15 @@ void computeRMSandAverages(){
     
     TGraphErrors *grAverage = 0x0;
     TGraphErrors *gRelativeUncertainties = 0x0;
-    TGraphErrors *gr[5];
-    TGraphErrors *grquadratic[5];
+    TGraphErrors *gr[nmassHyp];
+    TGraphErrors *grquadratic[nmassHyp];
 for(int ipt=0; ipt<nptbins+1; ipt++) fbVal[ipt] = new TH1F(Form("Pt bin:%s",titlePtString[ipt].Data()), "", 100, 0.,1.);
     Double_t xx, yy;
-for(int imass=0;imass<5;imass++){
-
-    TString path = Form("mass_%1.2f_%1.2f_%1.2f_%1.2f",mbins[imass][0],mbins[imass][1],mbins[imass][2],mbins[imass][3]);
+for(int imass=0;imass<nmassHyp;imass++){
+    TString path = "mass_";
+    for(int i=0; i<nmass-1; i++) path.Append(Form("%1.2f_",mbins[imass][i]));
+    path.Append(Form("%1.2f",mbins[imass][nmass-1]));
+    //TString path = Form("mass_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f",mbins[imass][0],mbins[imass][1],mbins[imass][2],mbins[imass][3],mbins[imass][4],mbins[imass][5]);
          TFile *fin = new TFile(Form("%s/fbResultsComb.root",path.Data()),"READ");
          gr[imass] = (TGraphErrors*)fin->Get(methodName);
          if(imass==0) grAverage = (TGraphErrors*)gr[imass]->Clone("grAverage");
@@ -134,7 +212,7 @@ cfbVal->Draw();
 TCanvas *cAvRMS = new TCanvas();
 cAvRMS->cd();
 grAverage->GetYaxis()->SetTitle("F_{B} (Average +- RMS)");
-gRelativeUncertainties->GetYaxis()->SetTitle("Rel. uncertainty (%)");
+gRelativeUncertainties->GetYaxis()->SetTitle("Rel. syst. uncertainty on x-bkg (%)");
 gRelativeUncertainties->Draw();
 cAvRMS->Draw();
 
@@ -183,33 +261,41 @@ TGraphErrors *grc1 = new TGraphErrors(4,xVal,averageVal,xValErr,uncertaintyVal);
 grc1->SetMarkerColor(4);
 grc1->SetMarkerStyle(21);
 grc1->SetTitle("Averages with uncertainties");
+grc1->GetXaxis()->SetTitle("p_{T}(GeV/c)");
+grc1->GetYaxis()->SetTitle("f_{B}");
+grc1->GetYaxis()->SetRangeUser(0.,0.5);
 grc1->Draw("ALP");
-
+TGraphErrors *grc1syst = new TGraphErrors(4,xVal,averageVal,xValErr,uncertaintyVal);
+for(int ipt=0; ipt<4; ipt++)
+grc1syst->SetPointError(ipt, gRelativeUncertainties->GetErrorX(ipt),gRelativeUncertainties->GetErrorY(ipt)*averageVal[ipt]);
+grc1syst->SetFillStyle(0);
+grc1syst->Draw(" E2 SAME");
+/////
+	TLegend *legend=new TLegend(0.37,0.10,0.62,0.30);
+        legend->SetBorderSize(0); legend->SetFillColor(0); legend->SetTextFont(42);
+        legend->SetFillStyle(0); legend->SetMargin(0.25);
+        legend->SetEntrySeparation(0.15);
+        legend->SetTextSize(0.045);
+ 	legend->AddEntry(grc1,"stat. uncertainty","pel");
+ 	legend->AddEntry(grc1syst,"syst. uncertainty from x-bkg","f");
+	legend->Draw();
 c1->SaveAs("ComparisonGraphs/AveragesAndUncertainties.pdf");
-
 }
 
 void plotVsAllMassHypothesis(){
  
-    for(int i=0;i<5;i++) plotVsMassHypothesis(i);
+    for(int i=0;i<nmassHyp;i++) plotVsMassHypothesis(i);
     return;
         
         
 }
-void plotAllResults(){
- for(int i=0; i<5; i++) plotResults(i,kFALSE);
+void plotAllResults(Bool_t createPdf=kFALSE){
+ for(int i=0; i<mbinsSize; i++) plotResults(i,createPdf);
  return;
 }
 
 void plotResults(Int_t num, Bool_t createPdf=kFALSE){
-
-Double_t mbins[9][4] = {
-        {2.50, 2.80, 3.20, 3.60},
-        {2.50, 2.75, 3.16, 3.60},
-        {2.50, 2.85, 3.25, 3.60},
-        {2.50, 2.75, 3.25, 3.60},
-        {2.50, 2.85, 3.16, 3.60}
-        };
+    printf("%d",mbinsSize);
 	readFbResults(mbins[num],createPdf);
 /////
 }
@@ -220,19 +306,26 @@ void plotVsAllMassEdges(){
     TString nameGraphs[] = {"fbVsPtComp","fbVsPtCompME","fbVsPtCompFsigFixed","fbVsPtCompFsigFixedME"};
     TString nameGraphs2[] = {"fbVsPtCombinedQuadrWeights","fbVsPtCombinedQuadrWeightsFsigFixed","fbVsPtCombinedQuadrWeightsFsigFixedME","fbVsPtCombinedQuadrWeightsME"};
     for(int i=0; i<4; i++){
-     plotVsMassEdges(nameGraphs[i],kFALSE);   
-     plotVsMassEdges(nameGraphs2[i],kTRUE);  
+     plotVsMassEdges(nameGraphs[i],kFALSE,0.,0.5);   
+     plotVsMassEdges(nameGraphs2[i],kTRUE,0.,0.5);  
     };
 }
 
+
+void plotChi2andFbVsAllMassEdgesME(){
+
+
+    TString nameGraphs[] = {"fbVsPtCompME","Chi2XprojVsPtCompME","Chi2MprojVsPtCompME"};
+    Double_t ymin[] = {0., 0., 0.};
+    Double_t ymax[] = {0.5, 5., 5.};
+    for(int i=0; i<3; i++){
+     plotVsMassEdges(nameGraphs[i],kFALSE,ymin[i],ymax[i]);
+    };
+  return;
+}
+
+
 void plotVsMassHypothesis(Int_t num){
-Double_t mbins[9][4] = {
-        {2.50, 2.80, 3.20, 3.60},
-        {2.50, 2.75, 3.16, 3.60},
-        {2.50, 2.85, 3.25, 3.60},
-        {2.50, 2.75, 3.25, 3.60},
-        {2.50, 2.85, 3.16, 3.60}
-        };
         TCanvas *canv = new TCanvas();
         gSystem->Exec(Form("mkdir -p ComparisonGraphs"));
             TLegend *legend=new TLegend(0.37,0.10,0.62,0.30);
@@ -240,8 +333,11 @@ Double_t mbins[9][4] = {
   	legend->SetFillStyle(0); legend->SetMargin(0.25);
   	legend->SetEntrySeparation(0.15);
   	legend->SetTextSize(0.045);
-        TString path = Form("mass_%1.2f_%1.2f_%1.2f_%1.2f",mbins[num][0],mbins[num][1],mbins[num][2],mbins[num][3]);
-        TString pathLegend = path;
+       //TString path = Form("mass_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f",mbins[0][0],mbins[0][1],mbins[0][2],mbins[0][3],mbins[0][4],mbins[0][5]);
+        TString path = "mass_";
+        for(int i=0; i<nmass-1; i++) path.Append(Form("%1.2f_",mbins[num][i]));
+        path.Append(Form("%1.2f",mbins[num][nmass-1]));
+	 TString pathLegend = path;
     pathLegend.ReplaceAll("_"," ");
     legend->SetHeader(Form("%s",pathLegend.Data()));
         
@@ -268,29 +364,22 @@ Double_t mbins[9][4] = {
     
 }
 
-void plotVsMassEdges(TString nameGraph, Bool_t isQuadr){
+void plotVsMassEdges(TString nameGraph, Bool_t isQuadr, Double_t ymin, Double_t ymax){
   
-	Double_t mbins[9][4] = {
-        {2.50, 2.80, 3.20, 3.60},
-        {2.50, 2.75, 3.16, 3.60},
-        {2.50, 2.85, 3.25, 3.60},
-        {2.50, 2.75, 3.25, 3.60},
-        {2.50, 2.85, 3.16, 3.60}
-        };
         TString quadrString = "";
         if(isQuadr) quadrString.Append("QuadrWeights");
 gSystem->Exec(Form("mkdir -p ComparisonGraphs"));
-        TLegend *legend=new TLegend(0.37,0.10,0.62,0.30);
+        TLegend *legend=new TLegend(0.37,0.05,0.62,0.45);
   	legend->SetBorderSize(0); legend->SetFillColor(0); legend->SetTextFont(42);
   	legend->SetFillStyle(0); legend->SetMargin(0.25);
   	legend->SetEntrySeparation(0.15);
   	legend->SetTextSize(0.045);
     legend->SetHeader(Form("%s",nameGraph.Data()));
 
-	Int_t colors[] = {1,2,4,6,7};
-	Int_t styles[] = {20,24,21,32,28};
+	Int_t colors[] = {1,2,4,6,7,8,9,3,15};
+        Int_t styles[] = {20,24,21,32,28,31,33,35,22};
         TCanvas *fbout = new TCanvas();
-	for(int im=0; im<5; im++){
+	for(int im=0; im<nmassHyp; im++){
         TString path = "mass_";
         for(int i=0; i<nmass-1; i++) path.Append(Form("%1.2f_",mbins[im][i]));
         path.Append(Form("%1.2f",mbins[im][nmass-1]));
@@ -301,7 +390,7 @@ gSystem->Exec(Form("mkdir -p ComparisonGraphs"));
 	gr->SetLineColor(colors[im]);
 	gr->SetMarkerColor(colors[im]);
 	gr->SetMarkerStyle(styles[im]);
-    gr->GetYaxis()->SetRangeUser(0,0.3);
+    	gr->GetYaxis()->SetRangeUser(ymin,ymax);
 	path.ReplaceAll("_"," ");
   	legend->AddEntry(gr,Form("%s GeV/c^{2}",path.Data()),"p"); 
         if(im==0) gr->Draw("AP");
@@ -338,15 +427,18 @@ TGraphErrors *fbVsPtFFQuadrME = BuildGraphFb(massBins,"FF",kTRUE,kFALSE,kTRUE,2,
 TGraphErrors *fbVsPtFsigFixedQuadrME = BuildGraphFb(massBins,"FF_FS",kTRUE,kTRUE,kTRUE,4,21);
 TGraphErrors *fbVsPtFFFsigFixedQuadrME = BuildGraphFb(massBins,"FF",kTRUE,kTRUE,kTRUE,6,21);
 //
-TGraphErrors *fbVsPtComp = BuildGraphFbCompTypes(massBins,types,kFALSE,kFALSE,kFALSE,"fbVsPtComp",1,20);
-TGraphErrors *fbVsPtCompFsigFixed = BuildGraphFbCompTypes(massBins,types,kFALSE,kTRUE,kFALSE,"fbVsPtCompFsigFixed",2,24);
-TGraphErrors *fbVsPtCompME = BuildGraphFbCompTypes(massBins,types,kFALSE,kFALSE,kTRUE,"fbVsPtCompME",4,21);
-TGraphErrors *fbVsPtCompFsigFixedME = BuildGraphFbCompTypes(massBins,types,kFALSE,kTRUE,kTRUE,"fbVsPtCompFsigFixedME",6,5);
-TGraphErrors *fbVsPtCompQuadr = BuildGraphFbCompTypes(massBins,types,kTRUE,kFALSE,kFALSE,"fbVsPtCombinedQuadrWeights",1,20);
-TGraphErrors *fbVsPtCompQuadrFsigFixed = BuildGraphFbCompTypes(massBins,types,kTRUE,kTRUE,kFALSE,"fbVsPtCombinedQuadrWeightsFsigFixed",2,24);
-TGraphErrors *fbVsPtCompQuadrFsigFixedME = BuildGraphFbCompTypes(massBins,types,kTRUE,kTRUE,kTRUE,"fbVsPtCombinedQuadrWeightsFsigFixedME",4,21);
-TGraphErrors *fbVsPtCompQuadrME = BuildGraphFbCompTypes(massBins,types,kTRUE,kFALSE,kTRUE,"fbVsPtCombinedQuadrWeightsME",6,5);
-
+TGraphErrors *fbVsPtComp = BuildGraphFbCompTypes(massBins,types,kFALSE,kFALSE,0,"fbVsPtComp",1,20);
+TGraphErrors *fbVsPtCompFsigFixed = BuildGraphFbCompTypes(massBins,types,kFALSE,kTRUE,0,"fbVsPtCompFsigFixed",2,24);
+TGraphErrors *fbVsPtCompME = BuildGraphFbCompTypes(massBins,types,kFALSE,kFALSE,1,"fbVsPtCompME",4,21);
+TGraphErrors *fbVsPtCompFsigFixedME = BuildGraphFbCompTypes(massBins,types,kFALSE,kTRUE,1,"fbVsPtCompFsigFixedME",6,5);
+TGraphErrors *fbVsPtCompLS = BuildGraphFbCompTypes(massBins,types,kFALSE,kFALSE,2,"fbVsPtCompLS",8,26);
+TGraphErrors *fbVsPtCompFsigFixedLS = BuildGraphFbCompTypes(massBins,types,kFALSE,kTRUE,2,"fbVsPtCompFsigFixedLS",7,32);
+TGraphErrors *fbVsPtCompQuadr = BuildGraphFbCompTypes(massBins,types,kTRUE,kFALSE,0,"fbVsPtCombinedQuadrWeights",1,20);
+TGraphErrors *fbVsPtCompQuadrFsigFixed = BuildGraphFbCompTypes(massBins,types,kTRUE,kTRUE,0,"fbVsPtCombinedQuadrWeightsFsigFixed",2,24);
+TGraphErrors *fbVsPtCompQuadrFsigFixedME = BuildGraphFbCompTypes(massBins,types,kTRUE,kTRUE,1,"fbVsPtCombinedQuadrWeightsFsigFixedME",4,21);
+TGraphErrors *fbVsPtCompQuadrME = BuildGraphFbCompTypes(massBins,types,kTRUE,kFALSE,1,"fbVsPtCombinedQuadrWeightsME",6,5);
+TGraphErrors *fbVsPtCompQuadrFsigFixedLS = BuildGraphFbCompTypes(massBins,types,kTRUE,kTRUE,1,"fbVsPtCombinedQuadrWeightsFsigFixedLS",8,26);
+TGraphErrors *fbVsPtCompQuadrLS = BuildGraphFbCompTypes(massBins,types,kTRUE,kFALSE,1,"fbVsPtCombinedQuadrWeightsLS",7,32);
 ///
 TGraphErrors *Chi2XVsPt = BuildGraphChi2X(massBins,"FF_FS",kFALSE,kFALSE,1,20); 
 TGraphErrors *Chi2XVsPtFF = BuildGraphChi2X(massBins,"FF",kFALSE,kFALSE,2,20); 
@@ -356,6 +448,11 @@ TGraphErrors *Chi2MVsPt = BuildGraphChi2M(massBins,"FF_FS",kFALSE,kFALSE,1,20);
 TGraphErrors *Chi2MVsPtFF = BuildGraphChi2M(massBins,"FF",kFALSE,kFALSE,2,20);
 TGraphErrors *Chi2MVsPtFsigFixed = BuildGraphChi2M(massBins,"FF_FS",kFALSE,kTRUE,1,20);
 TGraphErrors *Chi2MVsPtFFFsigFixed = BuildGraphChi2M(massBins,"FF",kFALSE,kTRUE,2,20);
+
+TGraphErrors *Chi2XVsPtCombME = BuildGraphChi2XProjCompTypes(massBins,types,kFALSE,kFALSE,kTRUE,"Chi2XprojVsPtCompME",4,21);
+TGraphErrors *Chi2XVsPtQuadrCombME = BuildGraphChi2XProjCompTypes(massBins,types,kTRUE,kFALSE,kTRUE,"Chi2XprojVsPtQuadrCompME",4,21);
+TGraphErrors *Chi2MVsPtCombME = BuildGraphChi2MProjCompTypes(massBins,types,kFALSE,kFALSE,kTRUE,"Chi2MprojVsPtCompME",4,21);
+TGraphErrors *Chi2MVsPtQuadrCombME = BuildGraphChi2MProjCompTypes(massBins,types,kTRUE,kFALSE,kTRUE,"Chi2MprojVsPtQuadrCompME",4,21);
 ///
 TGraphErrors *fSigVsPt = BuildGraphFSig(massBins,"FF_FS",kFALSE,kFALSE,1,24); 
 TGraphErrors *fSigVsPtFF = BuildGraphFSig(massBins,"FF",kFALSE,kFALSE,1,24); 
@@ -560,9 +657,15 @@ fbVsPtCompFsigFixed->Draw("P SAME");
     TFile fout(Form("%s/fbResultsComb.root",massfilename.Data()),"RECREATE");
 fbVsPtComp->Write();
 fbVsPtCompME->Write();
+fbVsPtCompLS->Write();
 fbVsPtCompFsigFixed->Write();
 fbVsPtCompFsigFixedME->Write();
-    
+fbVsPtCompFsigFixedLS->Write();
+///
+Chi2XVsPtCombME->Write();    
+Chi2XVsPtQuadrCombME->Write();    
+Chi2MVsPtCombME->Write();    
+Chi2MVsPtQuadrCombME->Write();    
 fout.Close();
 
 TCanvas *cFbcompQuadratic = new TCanvas();
@@ -587,10 +690,23 @@ fbVsPtCompQuadrFsigFixed->Draw("P SAME");
     TFile fout2(Form("%s/fbResultsCombQuadrWeights.root",massfilename.Data()),"RECREATE");
     fbVsPtCompQuadr->Write();
 fbVsPtCompQuadrME->Write();
+fbVsPtCompQuadrLS->Write();
 fbVsPtCompQuadrFsigFixed->Write();
 fbVsPtCompQuadrFsigFixedME->Write();
+fbVsPtCompQuadrFsigFixedLS->Write();
 fout2.Close();
     
+
+/// create pdf
+/*if(pdf){
+gSystem->Exec(Form("cp showplots.tex %s",massfilename.Data()));
+gSystem->cd(Form("%s",massfilename.Data()));
+    gSystem->Exec(Form("pdflatex \"\\def\\mLOne{%1.1f}\\def\\mLTwo{%1.1f}\\def\\mLThree{%1.1f}\\def\\mHOne{%1.1f}\\def\\mHTwo{%1.1f}\\def\\mHThree{%1.1f}\\include{showplots}\"",massBins[0],massBins[1],massBins[2],massBins[3],massBins[4],massBins[5]));
+        gSystem->Exec(Form("pdflatex \"\\def\\mLOne{%1.1f}\\def\\mLTwo{%1.1f}\\def\\mLThree{%1.1f}\\def\\mHOne{%1.1f}\\def\\mHTwo{%1.1f}\\def\\mHThree{%1.1f}\\include{showplots}\"",massBins[0],massBins[1],massBins[2],massBins[3],massBins[4],massBins[5]));
+gSystem->Exec("mv showplots.pdf summaryPlots.pdf");
+gSystem->Exec("rm -rf showplots.*");
+*/  
+
 
 /// create pdf
 if(pdf){
@@ -599,7 +715,7 @@ gSystem->cd(Form("%s",massfilename.Data()));
 gSystem->Exec(Form("pdflatex \"\\def\\mLOne{%1.1f}\\def\\mLTwo{%1.1f}\\def\\mHOne{%1.1f}\\def\\mHTwo{%1.1f}\\include{showplots}\"",massBins[0],massBins[1],massBins[2],massBins[3]));
 gSystem->Exec(Form("pdflatex \"\\def\\mLOne{%1.1f}\\def\\mLTwo{%1.1f}\\def\\mHOne{%1.1f}\\def\\mHTwo{%1.1f}\\include{showplots}\"",massBins[0],massBins[1],massBins[2],massBins[3]));
 gSystem->Exec("mv showplots.pdf summaryPlots.pdf");
-gSystem->Exec("rm -rf showplots.*");
+gSystem->Exec("rm -rf showplots.*"); 
 }
 
 return;
@@ -811,7 +927,55 @@ fbVsPt->SetMarkerStyle(style);
 return fbVsPt;
 }
 
-TGraphErrors *BuildGraphFbCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Bool_t mixedEvents,TString nameGraph, Int_t color, Int_t style){
+TGraphErrors *BuildGraphFbCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Int_t bkgType,TString nameGraph, Int_t color, Int_t style){
+
+TString massfilename="mass_";
+TString massfilename1="";
+for(int ij=0;ij<nmass; ij++) {
+        if(ij != nmass-1) { massfilename.Append(Form("%1.2f_",massBins[ij])); massfilename1.Append(Form("m%d%1.2f_",ij+1,massBins[ij]));  }
+        else {massfilename.Append(Form("%1.2f",massBins[ij])); massfilename1.Append(Form("m%d%1.2f",ij+1,massBins[ij]));}
+}
+
+Double_t fb, fberr, fsig, fsigerr, chi2x, chi2m;
+TGraphErrors *fbVsPt = new TGraphErrors(nptbins+1);
+// pt integrated
+TString name = Form("%s/fbPt%1.2f_%1.2f_%s_type%s",massfilename.Data(),ptbins[0],ptbins[nptbins],massfilename1.Data(),types[0].Data());
+if(isQuadr) name.Append("_quadratic");
+if(fSigFixed) name.Append("_FsigFixed");
+if(bkgType==1) name.Append("_ME");
+else if(bkgType==2) name.Append("_LS");
+ifstream filenameFb(Form("%s.txt",name.Data()));
+filenameFb >> fb >> fberr >> fsig >> fsigerr >> chi2x >> chi2m;
+fbVsPt->SetPoint(0,0.75,fb);
+fbVsPt->SetPointError(0,0.75,fberr);
+    filenameFb.close();
+///
+for(int ipt=0; ipt<nptbins; ipt++){
+name = Form("%s/fbPt%1.2f_%1.2f_%s_type%s",massfilename.Data(),ptbins[ipt],ptbins[ipt+1],massfilename1.Data(),types[ipt+1].Data());
+if(isQuadr) name.Append("_quadratic");
+if(fSigFixed) name.Append("_FsigFixed");
+    if(bkgType == 1) name.Append("_ME");
+    else if(bkgType == 2) name.Append("_LS");
+ifstream filenameFbPt(Form("%s.txt",name.Data()));
+filenameFbPt >> fb >> fberr >> fsig >> fsigerr >> chi2x >> chi2m;
+fbVsPt->SetPoint(ipt+1,(ptbins[ipt]+ptbins[ipt+1])/2.,fb);
+fbVsPt->SetPointError(ipt+1,(ptbins[ipt+1]-ptbins[ipt])/2.,fberr);
+    filenameFbPt.close();
+}
+
+fbVsPt->SetTitle(" ");
+fbVsPt->SetName(nameGraph);
+fbVsPt->GetXaxis()->SetTitle("p_{T}(GeV/c)");
+fbVsPt->GetYaxis()->SetTitle("f_{B}");
+fbVsPt->SetLineColor(color);
+fbVsPt->SetMarkerColor(color);
+fbVsPt->SetMarkerStyle(style);
+
+return fbVsPt;
+
+}
+
+TGraphErrors *BuildGraphChi2XProjCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Bool_t mixedEvents,TString nameGraph, Int_t color, Int_t style){
 
 TString massfilename="mass_";
 TString massfilename1="";
@@ -829,8 +993,8 @@ if(fSigFixed) name.Append("_FsigFixed");
 if(mixedEvents) name.Append("_ME");
 ifstream filenameFb(Form("%s.txt",name.Data()));
 filenameFb >> fb >> fberr >> fsig >> fsigerr >> chi2x >> chi2m;
-fbVsPt->SetPoint(0,0.75,fb);
-fbVsPt->SetPointError(0,0.75,fberr);
+fbVsPt->SetPoint(0,0.75,chi2x);
+fbVsPt->SetPointError(0,0.75,0.);
     filenameFb.close();
 ///
 for(int ipt=0; ipt<nptbins; ipt++){
@@ -840,15 +1004,61 @@ if(fSigFixed) name.Append("_FsigFixed");
     if(mixedEvents) name.Append("_ME");
 ifstream filenameFbPt(Form("%s.txt",name.Data()));
 filenameFbPt >> fb >> fberr >> fsig >> fsigerr >> chi2x >> chi2m;
-fbVsPt->SetPoint(ipt+1,(ptbins[ipt]+ptbins[ipt+1])/2.,fb);
-fbVsPt->SetPointError(ipt+1,(ptbins[ipt+1]-ptbins[ipt])/2.,fberr);
+fbVsPt->SetPoint(ipt+1,(ptbins[ipt]+ptbins[ipt+1])/2.,chi2x);
+fbVsPt->SetPointError(ipt+1,(ptbins[ipt+1]-ptbins[ipt])/2.,0.);
     filenameFbPt.close();
 }
 
 fbVsPt->SetTitle(" ");
 fbVsPt->SetName(nameGraph);
 fbVsPt->GetXaxis()->SetTitle("p_{T}(GeV/c)");
-fbVsPt->GetYaxis()->SetTitle("f_{B}");
+fbVsPt->GetYaxis()->SetTitle("Chi^{2} (x-projection)");
+fbVsPt->SetLineColor(color);
+fbVsPt->SetMarkerColor(color);
+fbVsPt->SetMarkerStyle(style);
+
+return fbVsPt;
+
+}
+
+TGraphErrors *BuildGraphChi2MProjCompTypes(Double_t massBins[], TString types[], Bool_t isQuadr, Bool_t fSigFixed, Bool_t mixedEvents,TString nameGraph, Int_t color, Int_t style){
+
+TString massfilename="mass_";
+TString massfilename1="";
+for(int ij=0;ij<nmass; ij++) {
+        if(ij != nmass-1) { massfilename.Append(Form("%1.2f_",massBins[ij])); massfilename1.Append(Form("m%d%1.2f_",ij+1,massBins[ij]));  }
+        else {massfilename.Append(Form("%1.2f",massBins[ij])); massfilename1.Append(Form("m%d%1.2f",ij+1,massBins[ij]));}
+}
+
+Double_t fb, fberr, fsig, fsigerr, chi2x, chi2m;
+TGraphErrors *fbVsPt = new TGraphErrors(nptbins+1);
+// pt integrated
+TString name = Form("%s/fbPt%1.2f_%1.2f_%s_type%s",massfilename.Data(),ptbins[0],ptbins[nptbins],massfilename1.Data(),types[0].Data());
+if(isQuadr) name.Append("_quadratic");
+if(fSigFixed) name.Append("_FsigFixed");
+if(mixedEvents) name.Append("_ME");
+ifstream filenameFb(Form("%s.txt",name.Data()));
+filenameFb >> fb >> fberr >> fsig >> fsigerr >> chi2x >> chi2m;
+fbVsPt->SetPoint(0,0.75,chi2m);
+fbVsPt->SetPointError(0,0.75,0.);
+    filenameFb.close();
+///
+for(int ipt=0; ipt<nptbins; ipt++){
+name = Form("%s/fbPt%1.2f_%1.2f_%s_type%s",massfilename.Data(),ptbins[ipt],ptbins[ipt+1],massfilename1.Data(),types[ipt+1].Data());
+if(isQuadr) name.Append("_quadratic");
+if(fSigFixed) name.Append("_FsigFixed");
+    if(mixedEvents) name.Append("_ME");
+ifstream filenameFbPt(Form("%s.txt",name.Data()));
+filenameFbPt >> fb >> fberr >> fsig >> fsigerr >> chi2x >> chi2m;
+fbVsPt->SetPoint(ipt+1,(ptbins[ipt]+ptbins[ipt+1])/2.,chi2m);
+fbVsPt->SetPointError(ipt+1,(ptbins[ipt+1]-ptbins[ipt])/2.,0.);
+    filenameFbPt.close();
+}
+
+fbVsPt->SetTitle(" ");
+fbVsPt->SetName(nameGraph);
+fbVsPt->GetXaxis()->SetTitle("p_{T}(GeV/c)");
+fbVsPt->GetYaxis()->SetTitle("Chi^{2} (m-projection)");
 fbVsPt->SetLineColor(color);
 fbVsPt->SetMarkerColor(color);
 fbVsPt->SetMarkerStyle(style);

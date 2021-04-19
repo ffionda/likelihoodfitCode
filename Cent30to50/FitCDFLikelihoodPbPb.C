@@ -149,8 +149,8 @@ Double_t*** ComputeWeightsForInterpolation(TNtuple *ntOrig, Bool_t kQuadratic, B
 Double_t ***LoadResolutionParameters(Double_t ptLimits[]);
 void LoadBackgroundFunctionsAndWeights(AliDielectronBtoJPSItoEleCDFfitFCN *likeObj,TString filename, TNtuple *ntCand, Bool_t Quadratic, Bool_t excludeExt);
 
-void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic, Double_t centmin=-1, Double_t centmax=-1, Bool_t fixFsig=kFALSE, Bool_t useMixedEvent=kFALSE);
-void FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow=2.2, Double_t bandUp=4.0, TString resType="FF;FS",Double_t  centmin=-1, Double_t centmax = -1, Bool_t useMixedEvent=kFALSE);
+void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic, Double_t centmin=-1, Double_t centmax=-1, Bool_t fixFsig=kFALSE, Int_t mBkgOpt = 0 );
+void FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow=2.2, Double_t bandUp=4.0, TString resType="FF;FS",Double_t  centmin=-1, Double_t centmax = -1, Int_t mBkgOpt = 0 );
 // global var
 AliDielectronBtoJPSItoEleCDFfitFCN *likely_obj = 0x0;
 AliDielectronBtoJPSItoEleCDFfitFCN *likely_obj_proj = 0x0;
@@ -168,7 +168,7 @@ Int_t kTypes = 3;
 Float_t nCandPtMassWnd[kNbinsMax][kNbinsMax][kNbinsMax];
 Float_t nCandPtMassWndSignal[kNbinsMax][kNbinsMax];
 
-void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, TString resType, Double_t  centmin, Double_t centmax,Bool_t useMixedEvent){
+void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, TString resType, Double_t  centmin, Double_t centmax, Int_t mBkgOpt ){
 
   ///////////////////////////////////////////////////////////////////
   //
@@ -215,7 +215,8 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
   if(fitmode < kFitChi2SigMass || fitmode > kFitBkgMass) { 
       TString resTypeSt = resType; 
       resTypeSt.ReplaceAll(";","_");
-      if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
+      if(mBkgOpt == 1 ) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
+      else if(mBkgOpt == 2 ) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgLS%s_.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax,resTypeSt.Data()));
       else SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",kPtBins > 1 ? ptEdges[0]: ptMin, kPtBins > 1 ? ptEdges[kPtBins] : ptMax));
   } 
   
@@ -889,7 +890,7 @@ return;
 }
 
 
-void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic,  Double_t centmin, Double_t centmax, Bool_t fixFsig, Bool_t useMixedEvent){
+void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double_t bandLow, Double_t bandUp, Bool_t kQuadratic,  Double_t centmin, Double_t centmax, Bool_t fixFsig, Int_t mBkgOpt ){
 ///////////////////////////////////////////////////////////////////
 // Set inv mass / pt limits
   //inv mass functions normalized to  1 between bandLow - bandUp 
@@ -904,7 +905,8 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
   if(filenameEdges) { for(int im=0; im<kMassBins+1; im++) { filenameEdges >> massBins[im]; /*printf("mass %f \n",massBins[im]);*/} }
   if(fixFsig){
       ifstream filenameFsig;
-      if(useMixedEvent) filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/FractionOfSignalMass%s_.txt",ptMin,ptMax,resTypeS.Data()));    
+      if(mBkgOpt == 1) filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/FractionOfSignalMassME%s_.txt",ptMin,ptMax,resTypeS.Data()));    
+      else if(mBkgOpt == 2) filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/FractionOfSignalMassLS%s_.txt",ptMin,ptMax,resTypeS.Data()));    
     else filenameFsig.open(Form("inputFiles_%1.1f_%1.1f/fSIGPt_%1.2f_%1.2f_type%s.txt",ptMin,ptMax,bandLow,bandUp,resTypeS.Data()));  
 
   if(filenameFsig) {filenameFsig >> fsigFrom1D; printf("Fsig from 1D in %1.2f-%1.2f GeV/c^{2} -> %1.2f",bandLow,bandUp,fsigFrom1D); }     
@@ -931,7 +933,8 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
   SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassSignalMC.root",ptMin,ptMax));
   // set inv mass signal parameters
   //SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",ptMin,ptMax));
-  if(useMixedEvent) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",ptMin,ptMax,resTypeS.Data()));
+  if(mBkgOpt == 1) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgME%s_.root",ptMin,ptMax,resTypeS.Data()));
+  else if(mBkgOpt == 2) SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgLS%s_.root",ptMin,ptMax,resTypeS.Data()));
    else SetStartingParameters(Form("inputFiles_%1.1f_%1.1f/InvariantMassBkgExpoChi2Fit.root",ptMin,ptMax));  
   
   
@@ -1201,7 +1204,8 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
   TString resTypeSlikeFit = resType; resTypeSlikeFit.ReplaceAll(";","_");
   if(kQuadratic) resTypeSlikeFit.Append("_quadraticWeights");
   if(fixFsig) resTypeSlikeFit.Append("_fSigFixed");
-  if(useMixedEvent) resTypeSlikeFit.Append("_ME");
+  if(mBkgOpt == 1) resTypeSlikeFit.Append("_ME");
+  else if(mBkgOpt == 2) resTypeSlikeFit.Append("_LS");
   invMassCan->SaveAs(Form("inputFiles_%1.1f_%1.1f/LikelihoodFitInvariantMass%s.root",ptMin,ptMax,resTypeSlikeFit.Data()));
   invMassCan->SaveAs(Form("inputFiles_%1.1f_%1.1f/LikelihoodFitInvariantMass%s.pdf",ptMin,ptMax,resTypeSlikeFit.Data()));
   Double_t integSig = invMassSig->Integral(bandLowSignal,bandUpSignal,1.e-06);
@@ -1249,7 +1253,8 @@ void FitCDFLikelihoodMVA(TString resType, Double_t ptMin, Double_t ptMax, Double
    stringmass.Append(Form("_type%s",resTypeS.Data()));
    if(kQuadratic) stringmass.Append("_quadratic");
    if(fixFsig) stringmass.Append("_FsigFixed");
-   if(useMixedEvent) stringmass.Append("_ME");
+   if(mBkgOpt == 1) stringmass.Append("_ME");
+   else if(mBkgOpt == 2) stringmass.Append("_LS");
    ofs.open (Form("fbPt%1.2f_%1.2f%s.txt",ptMin,ptMax,stringmass.Data()), std::ofstream::out | std::ofstream::app);
    ofs << Form("%f %f %f %f %f %f \n",FbFromFit,FbErr,FsigFromFit,FsigErr,(rPsproper_sig->Chi2()/(Double_t)rPsproper_sig->Ndf()),(rMass->Chi2()/(Double_t)rMass->Ndf()));
    ofs.close();

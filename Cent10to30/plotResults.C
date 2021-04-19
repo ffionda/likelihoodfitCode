@@ -3,12 +3,12 @@ Int_t nptbins = 3;
 Double_t ptbins[] = {1.5,3.0,5.0,10.0};
 TString types[] = {"FF","FF","FF","FF_FS"};
 Int_t nmass = 6;
-Int_t nmassHyp = 9;
+Int_t nmassHyp = 6;
 Double_t mbins[9][6] = {
         {2.60, 2.70, 2.80, 3.20, 3.40, 3.60},
-        {2.60, 2.72, 2.80, 3.20, 3.38, 3.60},
-        {2.60, 2.68, 2.80, 3.20, 3.42, 3.60},
-        {2.60, 2.70, 2.78, 3.22, 3.40, 3.60},
+        //{2.60, 2.72, 2.80, 3.20, 3.38, 3.60},
+        //{2.60, 2.68, 2.80, 3.20, 3.42, 3.60},
+        //{2.60, 2.70, 2.78, 3.22, 3.40, 3.60},
         {2.60, 2.70, 2.82, 3.18, 3.40, 3.60},
         {2.60, 2.72, 2.82, 3.22, 3.42, 3.60},
         {2.60, 2.68, 2.78, 3.18, 3.38, 3.60},
@@ -53,8 +53,10 @@ void computeSystInvMassBkg(){
         legend->SetTextSize(0.045);
 
         for(int ij=0; ij<nmassHyp; ij++) {
-        TString path = Form("mass_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f_%1.2f",mbins[ij][0],mbins[ij][1],mbins[ij][2],mbins[ij][3],mbins[ij][4],mbins[ij][5]);
-        TString pathLegend = path;
+        TString path = "mass_";
+        for(int i=0; i<nmass-1; i++) path.Append(Form("%1.2f_",mbins[ij][i]));
+        path.Append(Form("%1.2f",mbins[ij][nmass-1]));
+	TString pathLegend = path;
         pathLegend.ReplaceAll("_"," ");
                 TGraphErrors *UncertPerMassEdge = computeRMSandAveragesForMassEdges(ij,kFALSE);
 
