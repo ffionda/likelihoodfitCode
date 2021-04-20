@@ -34,7 +34,7 @@ void plotVsMassHypothesis(Int_t num);
 void plotVsAllMassHypothesis();
 void plotAllResults(Bool_t createPdf);
 TGraphErrors* computeRMSandAveragesForMassEdges(Int_t massHyp, Bool_t draw);
-void computeRMSandAverages();
+void computeRMSandAverages(TString filePathNameOutput="../resultsVsCentrality");
 void computeSystInvMassBkg();
 
 
@@ -167,7 +167,7 @@ cAvRMS->SaveAs("ComparisonGraphs/RelativUncertaintiesOnInvMassBkg.pdf");
 return gRelativeUncertainties;
 }
 
-void computeRMSandAverages(){
+void computeRMSandAverages(TString filePathNameOutput){
     TString methodName="fbVsPtCompME";
     TString methodName2="fbVsPtCombinedQuadrWeightsME";
     TH1F *fbVal[nptbins+1]; 
@@ -285,6 +285,14 @@ grc1syst->Draw(" E2 SAME");
  	legend->AddEntry(grc1syst,"syst. uncertainty from x-bkg","f");
 	legend->Draw();
 c1->SaveAs("ComparisonGraphs/AveragesAndUncertainties.pdf");
+ ///
+gSystem->Exec(Form("mkdir -p %s",filePathNameOutput.Data()));
+TFile fout(Form("%s/resultsFb10to30.root",filePathNameOutput.Data()),"RECREATE");
+grc1->SetName("fBstat");
+grc1->Write();
+grc1syst->SetName("fBsystXbkg");
+grc1syst->Write();
+return;
 }
 
 void plotVsAllMassHypothesis(){
