@@ -41,6 +41,7 @@ void ConfigureSignalExtractionLS(Double_t ptMin, Double_t ptMax,
                                  Double_t minFit, Double_t maxFit, 
                                  Double_t minExcl, Double_t maxExcl,Int_t pairTypeMin, Int_t pairTypeMax);
 
+void FillSignalHist(TH1F *ntToFill, TNtuple *ntNew, Double_t ptmin, Double_t ptmax, Int_t pairTypeMin, Int_t pairTypeMax,Double_t mMin, Double_t mMax,Double_t centmin, Double_t centmax);
 //void getSignals(const Char_t* filename, Double_t ptMin, Double_t ptMax, Double_t centMin, Double_t centMax);
 
 
@@ -222,8 +223,15 @@ void ExtractJpsiSignal(const Char_t* filename,
    gFits.SetSELSHistograms(sels1, sels2);
    gFits.SetMELSHistograms(mels1, mels2);
    
+   
    TFile* mcShapeFile=TFile::Open("LHC15o_mcShape.root");
    TH1F* mcShape = (TH1F*)mcShapeFile->Get("Mass");
+   mcShape->Reset();
+   TFile* mcNtupla=TFile::Open("./InputRootFiles/NtuplePP5TeV_MC_OS_tightPID.root"); 
+   TNtuple *ntupla = (TNtuple*)mcNtupla->Get("fNtupleJPSI");
+   FillSignalHist(mcShape,ntupla,ptMin,ptMax,pairTypeMin,pairTypeMax,0.,5.,centMin,centMax); 
+   
+   
    gFits.SetSignalMCshape(mcShape);
    
    Double_t fitPtMin = 1.8;
@@ -695,6 +703,36 @@ void BeutifyTAxis(TAxis* ax,
    ax->SetLabelSize(labelSize);
    ax->SetLabelFont(labelFont);
    ax->SetNdivisions(nDivisions);
+}
+
+
+void FillSignalHist(TH1F *ntToFill, TNtuple *ntNew, Double_t ptmin, Double_t ptmax, Int_t pairTypeMin, Int_t pairTypeMax,Double_t mMin, Double_t mMax,Double_t centmin, Double_t centmax){
+  // add mc ntupla
+  ntNew->ResetBranchAddresses();
+  Float_t mm , xx, tt, pt, cent;
+  ntNew->SetBranchAddress("Xdecaytime",&xx);
+  ntNew->SetBranchAddress("Mass",&mm);
+  ntNew->SetBranchAddress("Type",&tt);
+  ntNew->SetBranchAddress("Pt",&pt);
+  ntNew->SetBranchAddress("Centrality",&cent);
+  Int_t fNcurrent=0;
+  Int_t nb = (Int_t)ntNew->GetEvent(fNcurrent);
+
+  for (Int_t iev=0; iev<(ntNew->GetEntries()); iev++){
+   if(pt < ptmin || pt > ptmax) {fNcurrent++; nb = (Int_t)ntNew->GetEvent(fNcurrent); continue;}
+   if(mm < mMin || mm > mMax || mm == mMin || mm == mMax) {fNcurrent++; nb = (Int_t)ntNew->GetEvent(fNcurrent); continue;}
+   if(centmin>0 && (cent < centmin || cent >= centmax)) {fNcurrent++; nb = (Int_t)ntNew->GetEvent(fNcurrent); continue;}
+   if(pairTypeMin>0 && (tt < pairTypeMin || tt > pairTypeMax)) {fNcurrent++; nb = (Int_t)ntNew->GetEvent(fNcurrent); continue;}
+   //ntToFill->Fill(xx,mm,tt,pt);
+   ntToFill->Fill(mm);
+   fNcurrent++;
+   nb = (Int_t)ntNew->GetEvent(fNcurrent);
+  }
+ cout <<  nb << endl;
+ //printf("new ntpula entries %d \n",ntToFill->GetEntries()); getchar();
+ TFile foutSig("InvMass_FF.root","RECREATE");
+ ntToFill->Write();
+ return;
 }
 
 
