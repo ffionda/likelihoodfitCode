@@ -157,8 +157,8 @@ AliDielectronBtoJPSItoEleCDFfitFCN *likely_obj_proj = 0x0;
 Bool_t computeIntMass = kTRUE; 
 const Int_t kNbinsMax = 10;
 
-//Double_t ptEdges[]={1.5,3.0};  // pt range(s) //CHANGED, uncomment if pt-independent integrated
-Double_t ptEdges[]={1.5,3.0,5.,10.};  // pt range(s)
+Double_t ptEdges[]={1.5,3.0};  // pt range(s) //CHANGED, uncomment if pt-independent integrated
+//Double_t ptEdges[]={1.5,3.0,5.,10.};  // pt range(s)
 Double_t massBins[]={2.6,2.8, 3.2,3.6}; // low mass (0) - interp. region (1) - high mass (2)
 //Double_t massBins[]={2.70, 2.75, 2.82, 3.2, 3.26, 3.4}; // low mass (0) - interp. region (1) - high mass (2)
 Int_t extrRegion = 1;  // interp. region
@@ -411,7 +411,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
    // used for 2D likelihood fit. 
    TF1 *resolutionFuncFit = 0x0; 
    if(fitmode==kFitChi2XResolFF) resolutionFuncFit = SetupResolutionFunction("resolutionFuncFF",resolutionParamFF,2);
-   else if(fitmode==kFitChi2XResolFS) resolutionFuncFit = SetupResolutionFunction("resolutionFuncFS",resolutionParamFF,1);
+   else if(fitmode==kFitChi2XResolFS) resolutionFuncFit = SetupResolutionFunction("resolutionFuncFS",resolutionParamFS,1);
    else if(fitmode==kFitChi2XResolSS) resolutionFuncFit = SetupResolutionFunction("resolutionFuncSS",resolutionParamFS,0);
    ///
    resolutionFuncFit->SetParameter(10,histpsproper->GetEntries()*histpsproper->GetBinWidth(1));
@@ -557,24 +557,32 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
      if(ptMin > 1.0){
      // 
      psProperBkgFit->FixParameter(5,psProperBkgFit->GetParameter(5));
-       if(!(resType.Contains("FS") && ptMin==3. && bandLow>3.)) psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
-     psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
-     if(resType.Contains("FF")) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7)); 
-     if(resType.Contains("FS") && ptMin==3. && bandLow>3.) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
+     psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
+     /*if(resType.Contains("FS") && bandLow < 3.) { 
+	     psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7)); 
+	     psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
+     } */
+       //if(!(resType.Contains("FS") && ptMin==3. && bandLow>3.)) 
+     if(resType.Contains("FF") && bandLow < 3.) psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
+     if(resType.Contains("FS") && bandLow < 3.) psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
+     //if(resType.Contains("FF")) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7)); 
+     //if(resType.Contains("FS") && ptMin==3. && bandLow>3.) psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
      }
      
      }else{
-     psProperBkgFit->SetParameter(4,20.);
      psProperBkgFit->SetParLimits(5, 0.0001,0.003);
      psProperBkgFit->SetParLimits(6, 0.0001,0.003);
      psProperBkgFit->SetParLimits(7, 0.001,0.1);
      psProperBkgFit->SetParLimits(8, 0.00005,0.0003);
-         
-     /*psProperBkgFit->SetParameter(4,20.);
+     if( (resType.Contains("FS") && bandLow==2.6) || (resType.Contains("FF") && bandLow==3.2 ) ){     
+     psProperBkgFit->SetParLimits(7, 0.001,0.1);
      psProperBkgFit->SetParLimits(5, 0.0001,0.005);
      psProperBkgFit->SetParLimits(6, 0.0001,0.005);
-     psProperBkgFit->SetParLimits(7, 0.001,0.1);
-     psProperBkgFit->SetParLimits(8, 0.00005,0.0003);*/
+     }
+     /*if(resType.Contains("FS") && bandLow < 3.) {    
+     psProperBkgFit->SetParLimits(7, 0.008,0.1);
+     psProperBkgFit->SetParLimits(8, 0.00005,0.003);
+     }*/
      }
    //
    if(resType.Contains("SS")) {
@@ -585,7 +593,8 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
    psProperBkgFit->Print();
    TCanvas *psTotCan = new TCanvas("pseudoProperDecayLengthBkgFitChi2","pseudoProperDecayLengthBkgFitChi2");
    psTotCan->cd()->SetLogy();
-   histpsproper->Fit("XBackground","","L0");
+   //histpsproper->Fit("XBackground","","L0");
+   histpsproper->Fit("XBackground","L0");
    for(int iparam=0; iparam<sizeBkg; iparam++) { paramInputValues[psProperBkgParamAll[iparam]] = psProperBkgFit->GetParameter(iparam+1); printf("param bkg %d -> %f \n",psProperBkgParamAll[iparam],paramInputValues[psProperBkgParamAll[iparam]]); }
    fithandler->SetParamStartValues(paramInputValues);
    likely_obj->SetAllParameters(paramInputValues);
