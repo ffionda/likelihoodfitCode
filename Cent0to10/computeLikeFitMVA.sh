@@ -3,13 +3,13 @@
 ## Set same values in the FitCDFLikelihoodPbPb.C macro
 #######
 MASSEDGES=($1 $2 $3 $4 $5 $6)  
-PTEDGES=(1.5 3.0 5.0 10.0)
-PTLIMITforLIKELIHOOD=2
+PTEDGES=(1.5 3.0 5.0 7.0 10.0)
+PTLIMITforLIKELIHOOD=3
 #PTEDGES=(5.0 10.0)
 INTERPREGION=2
 CENTMIN=0.
 CENTMAX=10.
-ANHISTPATH="./AnalysisHistograms_jpsi2ee_tigthPID.root"
+ANHISTPATH="./AnalysisHistograms_jpsi2ee_May.root"
 #######
 CANDTYPE="FF;FS"
 ######

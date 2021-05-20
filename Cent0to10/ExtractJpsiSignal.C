@@ -227,7 +227,8 @@ void ExtractJpsiSignal(const Char_t* filename,
    TFile* mcShapeFile=TFile::Open("LHC15o_mcShape.root");
    TH1F* mcShape = (TH1F*)mcShapeFile->Get("Mass");
    mcShape->Reset();
-   TFile* mcNtupla=TFile::Open("../InputRootFiles/NtuplePP5TeV_MC_OS_tightPID.root"); 
+   //TFile* mcNtupla=TFile::Open("../InputRootFiles/NtuplePP5TeV_MC_OS_tightPID.root"); 
+   TFile* mcNtupla=TFile::Open("../InputRootFiles/NtuplePbPb5TeV_DATA_May.root"); 
    TNtuple *ntupla = (TNtuple*)mcNtupla->Get("fNtupleJPSI");
    //TH1F* mcShape = (TH1F*)mcShapeFile->Get("fInvMassAll");
    FillSignalHist(mcShape,ntupla,ptMin,ptMax,pairTypeMin,pairTypeMax,0.,5.,centMin,centMax); 
