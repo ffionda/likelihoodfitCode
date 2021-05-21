@@ -25,8 +25,8 @@
 //
 
 //Use the tigther PID cuts
-TString inputDistr = "./InputRootFiles/NtuplePP5TeV_DATA_OS_tightPID.root"; //
-TString inputDistrMC = "./InputRootFiles/NtuplePP5TeV_MC_OS_tigthPID.root"; // only prompt J/psi
+TString inputDistr = "./InputRootFiles/NtuplePbPb5TeV_DATA_May.root"; //
+TString inputDistrMC = "./InputRootFiles/NtuplePbPb5TeV_MC_May.root"; // only prompt J/psi
 
 enum fitParameters {
 // x background
@@ -559,19 +559,23 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
      psProperBkgFit->FixParameter(5,psProperBkgFit->GetParameter(5));
      psProperBkgFit->FixParameter(6,psProperBkgFit->GetParameter(6));
      psProperBkgFit->FixParameter(8,psProperBkgFit->GetParameter(8));
-     if(resType.Contains("FF") && !(bandLow == 2.68 && bandUp == 2.78 && (ptMin == 1.5 || ptMin == 3.0)) && !(bandLow == 2.70 && bandUp == 2.78 && ( ptMin == 3.0)))  psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
+     /*if(resType.Contains("FF") && !(bandLow == 2.68 && bandUp == 2.78 && (ptMin == 1.5 || ptMin == 3.0)) && !(bandLow == 2.70 && bandUp == 2.78 && ( ptMin == 3.0)))  psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
      //if(resType.Contains("FF") && !(bandLow == 2.70 && bandUp == 2.78 && ( ptMin == 3.0)))  psProperBkgFit->FixParameter(7,psProperBkgFit->GetParameter(7));
          if(ptMin == 3. && resType.Contains("FS") && !(bandLow == 3.20 && bandUp == 3.42) ){
              psProperBkgFit->FixParameter(1,psProperBkgFit->GetParameter(1));
 	     psProperBkgFit->FixParameter(2,psProperBkgFit->GetParameter(2));
-	 } 
+	 } */ 
          
     }
      
      }else{
      //psProperBkgFit->SetParameter(4,20.);
-     
      psProperBkgFit->SetParLimits(5, 0.0001,0.008);
+     psProperBkgFit->SetParLimits(6, 0.0001,0.008);
+     psProperBkgFit->SetParLimits(8, 0.00005,0.001);
+     psProperBkgFit->SetParLimits(7, 0.001,0.1);
+ 
+     /*psProperBkgFit->SetParLimits(5, 0.0001,0.008);
      psProperBkgFit->SetParLimits(6, 0.0001,0.008);
      psProperBkgFit->SetParLimits(7, 0.0005,0.2);
      psProperBkgFit->SetParLimits(8, 0.00005,0.001);
@@ -579,7 +583,7 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
      if( TMath::Abs(bandLow - 2.7)<0.03 && resType.Contains("FF") && !(bandLow==2.68 && bandUp==2.80) && !(bandLow==2.68 && bandUp==2.78)) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
      if( bandLow == 2.72 && bandUp == 2.82 && resType.Contains("FS")) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
      if (bandLow == 2.60 && bandUp == 2.68 && resType.Contains("FF")) psProperBkgFit->SetParLimits(7, 0.0001,0.05);
-       //  psProperBkgFit->SetParLimits(7, 0.0001,0.05);
+       //  psProperBkgFit->SetParLimits(7, 0.0001,0.05); */
     }
    //
    if(resType.Contains("SS")) {
@@ -590,7 +594,15 @@ void  FitCDFLikelihoodPbPb(Int_t fitmode, Double_t ptMin, Double_t ptMax, Double
    psProperBkgFit->Print();
    TCanvas *psTotCan = new TCanvas("pseudoProperDecayLengthBkgFitChi2","pseudoProperDecayLengthBkgFitChi2");
    psTotCan->cd()->SetLogy();
-   histpsproper->Fit("XBackground","","L0");
+   //histpsproper->Fit("XBackground","","L0");
+
+   for (int ij=0; ij<100; ij++) {
+           TFitResultPtr rFitRes = histpsproper->Fit("XBackground","L0RS");
+           TString status = std::string(gMinuit->fCstatu);
+           printf("status: %s \n",status.Data());
+           if(status.Contains("CONVERGED") /*&& TMath::Abs((rFitRes->Chi2()/(Double_t)rFitRes->Ndf()) )<=1.*/) ij = 100.;
+           }
+
    for(int iparam=0; iparam<sizeBkg; iparam++) { paramInputValues[psProperBkgParamAll[iparam]] = psProperBkgFit->GetParameter(iparam+1); printf("param bkg %d -> %f \n",psProperBkgParamAll[iparam],paramInputValues[psProperBkgParamAll[iparam]]); }
    fithandler->SetParamStartValues(paramInputValues);
    likely_obj->SetAllParameters(paramInputValues);

@@ -9,7 +9,7 @@ PTLIMITforLIKELIHOOD=2
 INTERPREGION=2
 CENTMIN=10.
 CENTMAX=30.
-ANHISTPATH="./AnalysisHistograms_jpsi2ee_tigthPID.root"
+ANHISTPATH="./AnalysisHistograms_jpsi2ee_May.root"
 #######
 CANDTYPE="FF;FS"
 ######
